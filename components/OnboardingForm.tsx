@@ -1,11 +1,12 @@
+// /components/OnboardingForm.tsx
 "use client";
 
 import { useState } from 'react';
-import { DRUG_TYPES } from '../lib/drug-config'; // 상대 경로 및 이름 일치
+import { DRUG_TYPES } from '../lib/drug-config';
 
 export default function OnboardingForm({ onComplete }: { onComplete: (data: any) => void }) {
   const [formData, setFormData] = useState({
-    drugType: 'TIRZEPATIDE',
+    drugType: 'TIRZEPATIDE' as keyof typeof DRUG_TYPES,
     currentDose: 2.5,
     age: 35,
     gender: 'male',
@@ -18,19 +19,19 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-xl mx-auto space-y-8 bg-white p-10 rounded-3xl shadow-xl border border-gray-100">
-      <div className="space-y-4">
-        <label className="block text-sm font-bold text-gray-700 ml-1">사용 중인 약물</label>
-        <div className="grid grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="max-w-xl mx-auto space-y-6 bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+      <div className="space-y-3">
+        <label className="text-sm font-bold text-gray-700">사용 중인 약물</label>
+        <div className="grid grid-cols-2 gap-3">
           {Object.entries(DRUG_TYPES).map(([key, value]) => (
             <button
               key={key}
               type="button"
-              onClick={() => setFormData({ ...formData, drugType: key, currentDose: value.steps[0] })}
-              className={`py-4 px-6 rounded-2xl font-bold transition-all ${
+              onClick={() => setFormData({ ...formData, drugType: key as keyof typeof DRUG_TYPES, currentDose: value.steps[0] })}
+              className={`p-4 rounded-xl font-bold transition-all ${
                 formData.drugType === key 
-                ? 'bg-blue-600 text-white shadow-lg ring-4 ring-blue-100' 
-                : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                ? 'bg-blue-600 text-white shadow-md' 
+                : 'bg-gray-50 text-gray-500'
               }`}
             >
               {value.name}
@@ -39,20 +40,20 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
         </div>
       </div>
 
-      <div className="space-y-4">
-        <label className="block text-sm font-bold text-gray-700 ml-1">현재 투여량 ({DRUG_TYPES[formData.drugType as keyof typeof DRUG_TYPES].unit})</label>
+      <div className="space-y-3">
+        <label className="text-sm font-bold text-gray-700">현재 투여량 ({DRUG_TYPES[formData.drugType].unit})</label>
         <select 
           value={formData.currentDose}
           onChange={(e) => setFormData({ ...formData, currentDose: parseFloat(e.target.value) })}
-          className="w-full p-4 bg-gray-50 border-none rounded-2xl font-medium focus:ring-2 focus:ring-blue-500"
+          className="w-full p-4 bg-gray-50 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-500"
         >
-          {DRUG_TYPES[formData.drugType as keyof typeof DRUG_TYPES].steps.map(dose => (
-            <option key={dose} value={dose}>{dose} {DRUG_TYPES[formData.drugType as keyof typeof DRUG_TYPES].unit}</option>
+          {DRUG_TYPES[formData.drugType].steps.map(dose => (
+            <option key={dose} value={dose}>{dose} {DRUG_TYPES[formData.drugType].unit}</option>
           ))}
         </select>
       </div>
 
-      <button type="submit" className="w-full py-5 bg-gray-900 text-white font-black rounded-2xl hover:bg-black transition-all shadow-xl text-lg">
+      <button type="submit" className="w-full py-4 bg-gray-900 text-white font-bold rounded-xl hover:bg-black transition-all">
         로드맵 생성하기
       </button>
     </form>
