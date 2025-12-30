@@ -1,6 +1,6 @@
 // /lib/drug-config.ts
 
-export const DRUG_METRICS = {
+export const DRUG_CONFIG = {
   SEMAGLUTIDE: {
     name: "세마글루타이드",
     originalBrands: ["위고비", "오젬픽"],
