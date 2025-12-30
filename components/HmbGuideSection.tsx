@@ -1,5 +1,5 @@
 // /components/HmbGuideSection.tsx
-import { HMB_GUIDE_CONTENT } from '@/lib/content';
+import { HMB_GUIDE_CONTENT } from '../lib/content';
 
 export default function HmbGuideSection() {
   return (

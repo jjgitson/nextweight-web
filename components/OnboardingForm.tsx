@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import { DRUG_CONFIG } from '@/lib/drug-config';
+import { DRUG_TYPES } from '../lib/drug-config';
 
 export default function OnboardingForm({ onComplete }: { onComplete: (data: any) => void }) {
   const [formData, setFormData] = useState({
