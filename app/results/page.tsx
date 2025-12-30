@@ -15,6 +15,7 @@ function ResultsContent() {
   const reportRef = useRef<HTMLDivElement>(null);
   
   const userData = {
+    // 터제타파이드 명칭은 lib/drug-config.ts의 설정을 따름
     drugType: (searchParams.get('drugType') as 'SEMAGLUTIDE' | 'TIRZEPATIDE') || 'TIRZEPATIDE',
     currentDose: parseFloat(searchParams.get('currentDose') || '2.5'),
     age: parseInt(searchParams.get('age') || '30'),
@@ -63,7 +64,7 @@ function ResultsContent() {
                 ))}
               </div>
             </div>
-            <button onClick={handleDownloadPDF} className="w-full py-5 bg-white border-2 border-gray-200 text-gray-900 font-bold rounded-2xl hover:bg-gray-50 transition-all">
+            <button onClick={handleDownloadPDF} className="w-full py-5 bg-white border-2 border-gray-200 text-gray-900 font-bold rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center">
               📄 PDF 다운로드
             </button>
           </div>
@@ -75,7 +76,7 @@ function ResultsContent() {
 
 export default function ResultsPage() {
   return (
-    <Suspense fallback={<div className="p-20 text-center">리포트 생성 중...</div>}>
+    <Suspense fallback={<div className="p-20 text-center">리포트를 생성 중입니다...</div>}>
       <ResultsContent />
     </Suspense>
   );
