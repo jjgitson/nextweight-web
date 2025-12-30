@@ -1,3 +1,4 @@
+// /app/results/page.tsx
 "use client";
 
 import { useState, useRef, Suspense } from 'react';
@@ -15,12 +16,11 @@ function ResultsContent() {
   const reportRef = useRef<HTMLDivElement>(null);
   
   const userData = {
-    // 터제타파이드 명칭은 lib/drug-config.ts의 설정을 따름
     drugType: (searchParams.get('drugType') as 'SEMAGLUTIDE' | 'TIRZEPATIDE') || 'TIRZEPATIDE',
     currentDose: parseFloat(searchParams.get('currentDose') || '2.5'),
     age: parseInt(searchParams.get('age') || '30'),
     gender: (searchParams.get('gender') as 'male' | 'female') || 'male',
-    currentWeight: parseFloat(searchParams.get('weight') || '0'),
+    weight: parseFloat(searchParams.get('weight') || '0'),
   };
 
   const result = generatePersonalizedRoadmap(userData);
