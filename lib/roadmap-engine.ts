@@ -1,20 +1,38 @@
 // /lib/roadmap-engine.ts
-import { DRUG_CONFIG } from './drug-config';
 
-export function generatePersonalizedRoadmap(data: any) {
-  // 데이터가 없을 경우 터제타파이드를 기본값으로 사용
-  const config = DRUG_CONFIG[data.drugType as keyof typeof DRUG_CONFIG] || DRUG_CONFIG.TIRZEPATIDE;
-  
-  const roadmap = config.steps.map((step, index) => ({
-    weekNum: index * 4, // 차트 X축 렌더링을 위한 필수 값
-    week: index === 0 ? "이번 주" : `D+${index * 4}주`,
-    dose: step,
-    unit: config.unit,
-    phase: step === config.maintenanceDose ? "유지 관리기" : "용량 조절기"
-  }));
+import { DRUG_TYPES } from './drug-config'; // 1. 명칭 수정
+
+interface UserData {
+  drugType: 'SEMAGLUTIDE' | 'TIRZEPATIDE';
+  currentDose: number;
+  age: number;
+  gender: 'male' | 'female';
+  weight: number;
+}
+
+export function generatePersonalizedRoadmap(userData: UserData) {
+  // 2. DRUG_CONFIG를 DRUG_TYPES로 변경하여 데이터 참조
+  const drugInfo = DRUG_TYPES[userData.drugType]; 
+  const { name, unit, steps } = drugInfo;
+
+  // 로드맵 생성 논리 (터제타파이드 및 세마글루타이드 맞춤형)
+  const roadmap = steps.map((dose, index) => {
+    const isMaintenance = dose >= drugInfo.maintenanceDose;
+    return {
+      week: (index + 1) * 4,
+      dose: dose,
+      phase: isMaintenance ? "유지 단계" : "증량 단계",
+      label: `${dose}${unit}`,
+      // 대사 가교(Metabolic Bridge)를 위한 가이드 예시
+      guidance: isMaintenance 
+        ? "근육량 보존을 위한 단백질 섭취 강화" 
+        : "약물 적응 및 부작용 모니터링"
+    };
+  });
 
   return {
-    drugName: config.name,
-    roadmap: roadmap
+    drugName: name, // '터제타파이드' 또는 '세마글루타이드'
+    roadmap: roadmap,
+    userData: userData
   };
 }
