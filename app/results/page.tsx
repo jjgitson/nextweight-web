@@ -3,10 +3,10 @@
 
 import { useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { generatePersonalizedRoadmap } from '@/lib/roadmap-engine';
-import { HMB_GUIDE_CONTENT } from '@/lib/content';
-import RoadmapChart from '@/components/RoadmapChart';
-import DisclaimerModal from '@/components/DisclaimerModal';
+import { generatePersonalizedRoadmap } from '../../lib/roadmap-engine';
+import { HMB_GUIDE_CONTENT } from '../../lib/content';
+import RoadmapChart from '../../components/RoadmapChart';
+import DisclaimerModal from '../../components/DisclaimerModal';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
