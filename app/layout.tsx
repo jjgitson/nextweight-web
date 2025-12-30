@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import "./globals.css"; // 만약 globals.css가 없다면 이 줄은 지워도 됩니다.
 
 export const metadata: Metadata = {
   title: "NextWeight Lab",
