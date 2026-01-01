@@ -1,114 +1,78 @@
 // /app/results/page.tsx
 "use client";
 
-import { useState, Suspense } from 'react';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { generatePersonalizedRoadmap, UserData } from '../../lib/roadmap-engine';
+import { generatePersonalizedRoadmap } from '../../lib/roadmap-engine';
+import { PROTEIN_20G_GUIDE, MEDICAL_RULES } from '../../lib/content';
 import RoadmapChart from '../../components/RoadmapChart';
-import DisclaimerModal from '../../components/DisclaimerModal';
 import { DRUG_TYPES } from '../../lib/drug-config';
-import { SIDE_EFFECT_GUIDE } from '../../lib/content';
 
 function ResultsContent() {
   const searchParams = useSearchParams();
-  const [isAgreed, setIsAgreed] = useState(false);
-  const [selectedSos, setSelectedSos] = useState<keyof typeof SIDE_EFFECT_GUIDE | null>(null);
-  
-  // URL 파라미터를 안전하게 읽어오기
-  const userData: UserData = {
+  const userData = {
     userName: searchParams.get('userName') || '사용자',
-    userAge: Number(searchParams.get('userAge')) || 30,
-    userGender: searchParams.get('userGender') || '여성',
-    currentWeight: Number(searchParams.get('currentWeight')) || 0,
-    targetWeight: Number(searchParams.get('targetWeight')) || 0,
-    drugStatus: searchParams.get('drugStatus') || '사용 전',
+    userAge: Number(searchParams.get('userAge')) || 35,
+    currentWeight: Number(searchParams.get('currentWeight')) || 80,
+    targetWeight: Number(searchParams.get('targetWeight')) || 70,
     drugType: (searchParams.get('drugType') as keyof typeof DRUG_TYPES) || 'MOUNJARO',
-    currentDose: Number(searchParams.get('currentDose')) || 0,
-    duration: searchParams.get('duration') || '사용 전',
     muscleMass: searchParams.get('muscleMass') || '표준',
-    exercise: searchParams.get('exercise') || '1-2회',
     budget: searchParams.get('budget') || '표준형',
-    mainConcern: searchParams.get('mainConcern') || '요요',
-    resolution: searchParams.get('resolution') || '',
   };
 
-  const drugConfig = DRUG_TYPES[userData.drugType];
-  const result = generatePersonalizedRoadmap(userData);
-
-  const handlePrint = () => {
-    window.print();
-  };
+  const { personalizedMessage } = generatePersonalizedRoadmap(userData as any);
+  const hrMax = 220 - userData.userAge; // 지침서 심박수 공식 [cite: 2530]
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans print:bg-white print:pb-0">
-      <DisclaimerModal isOpen={!isAgreed} onConfirm={() => setIsAgreed(true)} />
-      
-      <div className="max-w-4xl mx-auto pt-10 px-6 print:pt-0 print:px-0">
-        <header className="mb-8 flex justify-between items-start">
-          <div className="flex-1">
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-r-2xl mb-6 shadow-sm print:shadow-none print:border-gray-200">
-              <h4 className="text-yellow-800 font-bold mb-1">📢 전문가 분석 조언</h4>
-              <p className="text-yellow-900 font-medium leading-relaxed">{result.personalizedMessage}</p>
-            </div>
-            <h1 className="text-3xl font-black text-gray-900">{userData.userName}님의 대사 가교 리포트</h1>
-          </div>
-          <button 
-            onClick={handlePrint} 
-            className="print:hidden ml-4 bg-gray-900 text-white px-5 py-3 rounded-2xl font-bold shadow-lg hover:bg-black transition-all"
-          >
-            PDF 저장/인쇄
-          </button>
-        </header>
-
-        {/* 차트 섹션 */}
-        <div className="bg-white p-8 rounded-[40px] shadow-sm mb-8 relative print:shadow-none print:border print:border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-black">체중 변화 및 용량 로드맵</h2>
-            <div className="flex gap-2 print:hidden">
-              <button onClick={() => setSelectedSos('NAUSEA')} className="text-[10px] bg-red-50 text-red-600 px-3 py-1 rounded-full font-bold border border-red-100 hover:bg-red-100">오심 SOS</button>
-              <button onClick={() => setSelectedSos('CONSTIPATION')} className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold border border-blue-100 hover:bg-blue-100">변비 SOS</button>
-            </div>
-          </div>
-          <RoadmapChart data={result.roadmap} userData={userData} drugConfig={drugConfig} />
-          <p className="text-[10px] text-gray-400 mt-6 text-center italic">{drugConfig.references}</p>
+    <div className="min-h-screen bg-slate-50 pb-20 p-6">
+      <div className="max-w-3xl mx-auto space-y-6">
+        {/* 학회 지침 마크 */}
+        <div className="text-[10px] text-blue-600 font-bold text-center bg-blue-50 py-2 rounded-full">
+          KSSO 대한비만학회 비만 진료지침 2024(9판) 기준 설계
         </div>
 
-        {/* GPS 전략 카드 */}
-        <section className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 print:border-gray-200">
-             <h3 className="font-bold text-blue-600 mb-2">G: Drug ({drugConfig.name})</h3>
-             <p className="text-xs text-gray-600 leading-relaxed">투약 궤도에 따른 포만감 유지 및 대사 가교 형성</p>
-          </div>
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 print:border-gray-200">
-             <h3 className="font-bold text-green-600 mb-2">P: Protein (100g)</h3>
-             <p className="text-xs text-gray-600 leading-relaxed">골격근 보호를 위한 단백질 분할 섭취 전략</p>
-          </div>
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 print:border-gray-200">
-             <h3 className="font-bold text-purple-600 mb-2">S: Strength (주 3회)</h3>
-             <p className="text-xs text-gray-600 leading-relaxed">대사 기관인 근육 활성화를 통한 요요 원천 차단</p>
-          </div>
-        </section>
+        {/* 전문가 분석 조언 */}
+        <div className="bg-white p-6 rounded-3xl shadow-sm border-l-8 border-blue-500">
+          <h3 className="font-black text-lg mb-2">📢 맞춤 분석 조언</h3>
+          <p className="text-gray-700 leading-relaxed">{personalizedMessage}</p>
+        </div>
 
-        {/* 부작용 SOS 모달 */}
-        {selectedSos && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 print:hidden">
-            <div className="bg-white p-8 rounded-[32px] max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-200">
-              <h3 className="text-xl font-bold text-red-600 mb-4">🩺 {SIDE_EFFECT_GUIDE[selectedSos].title}</h3>
-              <div className="space-y-4 mb-8">
-                <div className="p-4 bg-gray-50 rounded-2xl">
-                  <p className="font-bold text-gray-800 mb-1">"{SIDE_EFFECT_GUIDE[selectedSos].check}"</p>
-                  <p className="text-sm text-gray-600 leading-relaxed">{SIDE_EFFECT_GUIDE[selectedSos].action}</p>
-                </div>
-                <p className="text-[10px] text-gray-400 text-center italic">근거: {SIDE_EFFECT_GUIDE[selectedSos].ref}</p>
+        {/* 5% 중단 규칙 알림 */}
+        <div className="bg-red-50 p-6 rounded-3xl border border-red-100">
+          <h4 className="text-red-700 font-bold mb-1">⚠️ {MEDICAL_RULES.FIVE_PERCENT_RULE.title}</h4>
+          <p className="text-sm text-red-600 opacity-90">{MEDICAL_RULES.FIVE_PERCENT_RULE.content}</p>
+        </div>
+
+        {/* 한 끼 단백질 20g 식품표 */}
+        <div className="bg-white p-8 rounded-[40px] shadow-sm">
+          <h3 className="text-xl font-black mb-6">🥩 한 끼 단백질 20g 채우기</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {PROTEIN_20G_GUIDE.map((item, idx) => (
+              <div key={idx} className="bg-slate-50 p-4 rounded-2xl">
+                <div className="text-xs text-slate-500">{item.name}</div>
+                <div className="font-bold text-slate-800">{item.weight}</div>
               </div>
-              <button onClick={() => setSelectedSos(null)} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all">확인 완료</button>
+            ))}
+          </div>
+        </div>
+
+        {/* 목표 심박수 가이드 */}
+        <div className="bg-slate-900 text-white p-8 rounded-[40px]">
+          <h3 className="text-xl font-black mb-4">🏋️ 맞춤 운동 강도 (심박수)</h3>
+          <div className="flex justify-between items-center bg-white/10 p-4 rounded-2xl">
+            <div>
+              <div className="text-xs opacity-60">중강도 (64-76%)</div>
+              <div className="text-lg font-bold">{(hrMax * 0.64).toFixed(0)} - {(hrMax * 0.76).toFixed(0)} bpm</div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs opacity-60">고강도 (77-95%)</div>
+              <div className="text-lg font-bold">{(hrMax * 0.77).toFixed(0)} - {(hrMax * 0.95).toFixed(0)} bpm</div>
             </div>
           </div>
-        )}
-
-        <footer className="text-center text-[10px] text-gray-400 mt-10 print:mt-20">
-          본 리포트는 임상 데이터를 기반으로 한 시뮬레이션이며, 실제 투약 및 처방은 반드시 전문의와 상의하십시오.
-        </footer>
+          <p className="text-[10px] mt-4 opacity-50 text-center italic">
+            * 중강도: 대화는 가능하나 노래는 어려운 정도 [cite: 2507]
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -116,7 +80,7 @@ function ResultsContent() {
 
 export default function ResultsPage() {
   return (
-    <Suspense fallback={<div className="p-20 text-center font-bold text-gray-500">대사 데이터를 분석하고 있습니다...</div>}>
+    <Suspense fallback={<div className="p-20 text-center">지침 데이터 로딩 중...</div>}>
       <ResultsContent />
     </Suspense>
   );
