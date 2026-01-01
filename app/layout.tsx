@@ -1,29 +1,17 @@
 // app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css"; // ✅ 이 파일이 반드시 app 폴더 안에 있어야 합니다.
+import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"], // ✅ subsets 누락 시 빌드 에러 발생
-});
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Next Weight Lab | 대사 가교(Metabolic Bridge) 로드맵",
-  description: "비만학회 지침 기반, 요요 방지를 위한 GPS(Drug, Protein, Strength) 전략을 확인하세요.",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+  description: "비싼 다이어트가 요요로 끝나지 않도록, GPS 전략으로 당신의 대사를 사수하세요.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
