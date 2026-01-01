@@ -1,7 +1,7 @@
 // /lib/roadmap-engine.ts
 import { DRUG_TYPES } from './drug-config';
 
-interface UserData {
+export interface UserData {
   userName: string;
   userAge: number;
   userGender: string;
@@ -25,7 +25,7 @@ export function generatePersonalizedRoadmap(userData: UserData) {
     throw new Error("Invalid drug type");
   }
 
-  // 시트 [Message Library] 로직 구현
+  // 시트 [Message Library] 기반 맞춤 조언 로직
   let personalizedMessage = "";
   const totalLossGoal = userData.currentWeight - userData.targetWeight;
 
@@ -39,9 +39,11 @@ export function generatePersonalizedRoadmap(userData: UserData) {
     personalizedMessage = `${userData.userName}님의 성공적인 대사 가교를 위해 GPS 로드맵을 설계했습니다.`;
   }
 
+  // 임상 데이터를 기반으로 로드맵 생성
   const roadmap = drugInfo.clinicalData.map((c, index) => {
     return {
       weekNum: c.week,
+      // 임상 주차에 맞춰 용량 단계 매핑 (인덱스 초과 방지)
       dose: drugInfo.steps[Math.min(index, drugInfo.steps.length - 1)],
       phase: index >= 3 ? "유지 관리기" : "증량 단계",
       label: `${c.week}주`,
