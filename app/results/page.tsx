@@ -4,70 +4,67 @@
 import { useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { generatePersonalizedRoadmap } from '../../lib/roadmap-engine';
-import { HMB_GUIDE_CONTENT } from '../../lib/content';
 import RoadmapChart from '../../components/RoadmapChart';
 import DisclaimerModal from '../../components/DisclaimerModal';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { DRUG_TYPES } from '../../lib/drug-config';
 
 function ResultsContent() {
   const searchParams = useSearchParams();
   const [isAgreed, setIsAgreed] = useState(false);
-  const reportRef = useRef<HTMLDivElement>(null);
   
   const userData = {
-    drugType: (searchParams.get('drugType') as 'SEMAGLUTIDE' | 'TIRZEPATIDE') || 'TIRZEPATIDE',
+    drugType: (searchParams.get('drugType') as 'WEGOVY' | 'MOUNJARO') || 'MOUNJARO',
     currentDose: parseFloat(searchParams.get('currentDose') || '2.5'),
-    age: parseInt(searchParams.get('age') || '30'),
-    gender: (searchParams.get('gender') as 'male' | 'female') || 'male',
-    weight: parseFloat(searchParams.get('weight') || '0'),
+    weight: parseFloat(searchParams.get('weight') || '80'), // 예시 기본값
+    budget: searchParams.get('budget') || '표준형',
   };
 
-  const result = generatePersonalizedRoadmap(userData);
-
-  const handleDownloadPDF = async () => {
-    if (!reportRef.current) return;
-    try {
-      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      pdf.addImage(imgData, 'PNG', 0, 0, 210, (canvas.height * 210) / canvas.width);
-      pdf.save(`NextWeight_Report_${result.drugName}.pdf`);
-    } catch (error) {
-      alert('PDF 생성 실패');
-    }
-  };
+  const drugConfig = DRUG_TYPES[userData.drugType];
+  const result = generatePersonalizedRoadmap(userData as any);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
       <DisclaimerModal isOpen={!isAgreed} onConfirm={() => setIsAgreed(true)} />
-      <div ref={reportRef} className="max-w-5xl mx-auto pt-12 px-6 bg-gray-50">
-        <header className="mb-12 text-center">
-          <h1 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Personalized Roadmap</h1>
-          <p className="text-gray-600 text-lg">{result.drugName} 관리를 위한 데이터 기반 경로입니다.</p>
-        </header>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2 space-y-8">
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-              <RoadmapChart data={result.roadmap} drugName={result.drugName} />
-            </div>
+      
+      <div className="max-w-4xl mx-auto pt-10 px-6">
+        {/* GPS 로드맵 카드  */}
+        <section className="mb-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <span className="text-2xl mb-2 block">💉</span>
+            <h3 className="font-bold text-gray-900">G: {drugConfig.name}</h3>
+            <p className="text-xs text-gray-500 mt-1">호르몬 모방을 통한 식욕 조절 </p>
           </div>
-          <div className="space-y-8">
-            <div className="bg-blue-900 text-white p-8 rounded-3xl shadow-lg">
-              <h2 className="text-xl font-bold mb-6 flex items-center">🧪 {HMB_GUIDE_CONTENT.title}</h2>
-              <div className="space-y-6 text-sm">
-                {HMB_GUIDE_CONTENT.sections.map(s => (
-                  <div key={s.id} className="border-b border-blue-800 pb-4 last:border-0">
-                    <h4 className="font-bold text-blue-300 mb-2">{s.subtitle}</h4>
-                    <p className="text-blue-100 leading-relaxed opacity-90">{s.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <button onClick={handleDownloadPDF} className="w-full py-5 bg-white border-2 border-gray-200 text-gray-900 font-bold rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center">
-              📄 PDF 다운로드
-            </button>
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <span className="text-2xl mb-2 block">🥩</span>
+            <h3 className="font-bold text-gray-900">P: Protein</h3>
+            <p className="text-xs text-gray-500 mt-1">하루 100g, 4회 분할 섭취 권장 </p>
           </div>
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <span className="text-2xl mb-2 block">🏋️</span>
+            <h3 className="font-bold text-gray-900">S: Strength</h3>
+            <p className="text-xs text-gray-500 mt-1">근육 사수를 통한 요요 방지 </p>
+          </div>
+        </section>
+
+        {/* 메인 차트 섹션 */}
+        <div className="bg-white p-8 rounded-[40px] shadow-sm mb-8">
+          <h2 className="text-xl font-black mb-6">대사 가교 시뮬레이션</h2>
+          <RoadmapChart data={result.roadmap} userData={userData} drugConfig={drugConfig} />
+          <p className="text-[10px] text-gray-400 mt-6 text-center italic">
+            {drugConfig.references}
+          </p>
+        </div>
+
+        {/* 예산별 맞춤 조언 섹션 [cite: 9] */}
+        <div className="bg-blue-600 text-white p-8 rounded-[40px]">
+          <h3 className="text-lg font-bold mb-4 flex items-center">
+             💡 {userData.budget}을 위한 맞춤 전략
+          </h3>
+          <p className="leading-relaxed opacity-90">
+            {userData.budget === '표준형' 
+              ? "월 5~10만 원 투자가 근육 1kg을 사수하며, 이는 향후 재투약 비용 200만 원을 아끼는 경제적 선택입니다. [cite: 9]"
+              : "일상 활동량을 20% 강제 증가시켜 지출 없이 대사 하한선을 사수하세요. [cite: 9]"}
+          </p>
         </div>
       </div>
     </div>
@@ -76,7 +73,7 @@ function ResultsContent() {
 
 export default function ResultsPage() {
   return (
-    <Suspense fallback={<div className="p-20 text-center">리포트를 생성 중입니다...</div>}>
+    <Suspense fallback={<div className="p-20 text-center">분석 중...</div>}>
       <ResultsContent />
     </Suspense>
   );
