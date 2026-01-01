@@ -1,59 +1,42 @@
+// /components/RoadmapChart.tsx
 "use client";
 
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, ReferenceLine, Label 
+  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, ReferenceLine 
 } from 'recharts';
 
-interface RoadmapChartProps {
-  data: any[];
-  drugName: string;
-}
-
-export default function RoadmapChart({ data, drugName }: RoadmapChartProps) {
-  // 유지기 진입 주차 찾기 (첫 번째 유지기 데이터의 weekNum)
-  const maintenanceStart = data.find(d => d.phase === '유지 관리기')?.weekNum;
+export default function RoadmapChart({ data, userData, drugConfig }: any) {
+  // 임상 데이터와 사용자 현재 체중을 결합하여 예상 곡선 생성 
+  const chartData = drugConfig.clinicalData.map((c: any) => ({
+    week: c.week,
+    // 임상 평균 체중 변화 (kg)
+    clinicalWeight: (userData.weight * (1 + c.percent / 100)).toFixed(1),
+    name: `${c.week}주`
+  }));
 
   return (
-    <div className="w-full h-[350px]">
+    <div className="w-full h-[300px]">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+        <ComposedChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-          <XAxis 
-            dataKey="weekNum" 
-            axisLine={false}
-            tickLine={false}
-            tick={{fontSize: 12, fill: '#9ca3af'}}
-            dy={10}
-            label={{ value: '경과 주차 (Week)', position: 'insideBottomRight', offset: -10, fontSize: 11 }}
-          />
-          <YAxis 
-            axisLine={false}
-            tickLine={false}
-            tick={{fontSize: 12, fill: '#9ca3af'}}
-            label={{ value: '용량 (mg)', angle: -90, position: 'insideLeft', fontSize: 11 }}
-          />
+          <XAxis dataKey="week" tick={{fontSize: 12}} />
+          <YAxis hide domain={['dataMin - 5', 'dataMax + 2']} />
           <Tooltip 
-            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}
-            labelFormatter={(label) => `D+${label}주`}
+            contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.1)' }}
+            formatter={(value) => [`${value} kg`, "예상 체중"]}
           />
-          
-          {maintenanceStart !== undefined && (
-            <ReferenceLine x={maintenanceStart} stroke="#10b981" strokeDasharray="5 5">
-              <Label value="유지기 관리 시작" position="top" fill="#10b981" fontSize={11} fontWeight="bold" />
-            </ReferenceLine>
-          )}
-
-          <Line 
+          {/* 임상 기반 가이드 영역  */}
+          <Area 
             type="monotone" 
-            dataKey="dose" 
-            stroke="#2563eb" 
-            strokeWidth={4} 
-            dot={{ r: 6, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }}
-            activeDot={{ r: 8, strokeWidth: 0 }}
-            animationDuration={1500}
+            dataKey="clinicalWeight" 
+            fill="#EFF6FF" 
+            stroke="#DBEAFE" 
+            name="임상 감량 궤도"
           />
-        </LineChart>
+          {/* 실제 주차 표시 (예시로 4주차 표시) */}
+          <ReferenceLine x={4} stroke="#3B82F6" strokeDasharray="3 3" />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );
