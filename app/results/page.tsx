@@ -15,7 +15,6 @@ function ResultsContent() {
     userGender: searchParams.get('userGender') || '여성',
     currentWeight: Number(searchParams.get('currentWeight')) || 80,
     targetWeight: Number(searchParams.get('targetWeight')) || 70,
-    startWeightBeforeDrug: Number(searchParams.get('startWeightBeforeDrug')) || undefined,
     drugStatus: searchParams.get('drugStatus') || '사용 전',
     drugType: (searchParams.get('drugType') as keyof typeof DRUG_TYPES) || 'MOUNJARO',
     currentDose: Number(searchParams.get('currentDose')) || 0,
@@ -34,15 +33,14 @@ function ResultsContent() {
       <div className="max-w-4xl mx-auto space-y-8">
         <header className="text-center py-6">
           <h1 className="text-3xl font-black italic text-slate-900">Next Weight Lab</h1>
-          <p className="text-slate-500 font-bold">비싼 다이어트가 요요로 끝나지 않도록.</p>
+          <p className="text-slate-500 font-bold">비싼 다이어트가 요요로 끝나지 않도록. </p>
         </header>
 
         {clinicalStatus && (
           <div className="bg-blue-600 text-white p-8 rounded-[40px] shadow-lg">
             <h3 className="font-black mb-2 flex items-center gap-2">📊 임상 평균 대비 성취도 분석</h3>
-            <p className="text-lg opacity-90">
-              {userData.userName}님은 임상 평균({clinicalStatus.clinicalPercent}%) 대비 
-              <strong> {clinicalStatus.label}</strong> 상태입니다.
+            <p className="text-lg opacity-90 leading-relaxed">
+              {userData.userName}님은 현재 {drugName} 임상 평균치({clinicalStatus.clinicalPercent}%)를 기준으로 관리가 진행 중입니다. 
             </p>
           </div>
         )}
@@ -61,8 +59,8 @@ function ResultsContent() {
           <h3 className="text-xl font-bold mb-6 flex items-center gap-2">💰 {userData.budget} ROI 분석</h3>
           <p className="text-yellow-400 font-bold text-lg leading-snug">
             {userData.budget === '표준형' 
-              ? "월 5~10만 원 투자가 근육 1kg 사수 → 재투약 비용 200만 원 절감" 
-              : "추가 지출 0원으로 약값 매몰 방지"}
+              ? "월 5~10만 원 투자가 근육 1kg 사수 → 재투약 비용 200만 원 절감 " 
+              : "추가 지출 0원으로 기초대사량 하한선 사수, 약값 매몰 방지 "}
           </p>
         </div>
       </div>
