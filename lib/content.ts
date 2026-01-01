@@ -1,4 +1,5 @@
 // /lib/content.ts
+
 export const SIDE_EFFECT_GUIDE = {
   NAUSEA: {
     title: "오심/구토 케어",
@@ -18,4 +19,15 @@ export const SIDE_EFFECT_GUIDE = {
     action: "공복 후 폭식을 피하고, 저자극 식단(죽, 삶은 채소 등)으로 전환하세요.",
     ref: "Nature. 2025"
   }
+};
+
+export const HMB_GUIDE_CONTENT = {
+  title: "근육 사수를 위한 HMB 가이드",
+  description: "터제타파이드/세마글루타이드 사용 시 발생하는 근육 손실을 방어하는 핵심 영양 전략입니다.",
+  benefits: [
+    "근단백질 분해 억제 및 합성 촉진",
+    "급격한 체중 감량 시 제지방(근육) 보존",
+    "대사 가교 형성으로 요요 현상 방지"
+  ],
+  usage: "하루 3g 섭취 (식사 관계 없이 분할 섭취 권장)"
 };
