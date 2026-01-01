@@ -10,51 +10,30 @@ export interface UserData {
   drugStatus: string;
   drugType: keyof typeof DRUG_TYPES;
   currentDose: number;
-  duration: string;
-  muscleMass: string;
-  exercise: string;
   budget: string;
-  mainConcern: string;
-  resolution: string;
+  muscleMass: string;
 }
 
 export function generatePersonalizedRoadmap(userData: UserData) {
-  const drugInfo = DRUG_TYPES[userData.drugType]; 
+  const drug = DRUG_TYPES[userData.drugType];
   
-  if (!drugInfo) {
-    throw new Error("Invalid drug type");
-  }
-
-  // 시트 [Message Library] 기반 맞춤 조언 로직
+  // 지침서 기반 맞춤 메시지 (5% 규칙 및 근감소성 비만 예방)
   let personalizedMessage = "";
-  const totalLossGoal = userData.currentWeight - userData.targetWeight;
+  const targetLoss = userData.currentWeight * 0.05; // 5% 감량 수치
 
-  if (userData.budget === '실속형' && userData.drugType === 'MOUNJARO') {
-    personalizedMessage = "강력한 감량 효과만큼 근육도 빠르게 빠질 수 있습니다. 돈 안 드는 '계단 오르기'가 현재 당신의 비싼 약값을 지키는 유일한 방법입니다.";
-  } else if (userData.budget === '표준형' && userData.muscleMass === '이하') {
-    personalizedMessage = "현재 골격근량이 위험 수준입니다. 월 5만 원의 HMB 투자가 향후 발생할 500만 원의 재투약 비용을 막는 가장 똑똑한 보험입니다.";
-  } else if (userData.drugStatus === '사용 전' && totalLossGoal > 10) {
-    personalizedMessage = "장기 투약이 예상됩니다. 초기부터 예산을 '표준형'으로 설정하여 근육을 지켜야, 최종적으로 약물 사용 기간을 줄여 총비용을 아낄 수 있습니다.";
+  if (userData.userAge >= 65) {
+    personalizedMessage = "65세 이상 연령층은 체중 감소보다 근육 보존을 통한 삶의 질 유지가 최우선입니다. 고강도 운동보다는 저항성 운동에 집중하세요.";
+  } else if (userData.muscleMass === '이하') {
+    personalizedMessage = `현재 근육량이 부족하여 근감소성 비만 위험이 있습니다. ${targetLoss.toFixed(1)}kg 감량 시점마다 근육량을 꼭 체크하세요.`;
   } else {
-    personalizedMessage = `${userData.userName}님의 성공적인 대사 가교를 위해 GPS 로드맵을 설계했습니다.`;
+    personalizedMessage = `${userData.userName}님, 대한비만학회 지침에 따른 안전한 대사 가교 로드맵입니다.`;
   }
 
-  // 임상 데이터를 기반으로 로드맵 생성
-  const roadmap = drugInfo.clinicalData.map((c, index) => {
-    return {
-      weekNum: c.week,
-      // 임상 주차에 맞춰 용량 단계 매핑 (인덱스 초과 방지)
-      dose: drugInfo.steps[Math.min(index, drugInfo.steps.length - 1)],
-      phase: index >= 3 ? "유지 관리기" : "증량 단계",
-      label: `${c.week}주`,
-      guidance: c.week <= 8 ? "적응기: GPS 기초 다지기" : "가교기: 내인성 대사 활성 유도"
-    };
-  });
+  const roadmap = drug.clinicalData.map((c, i) => ({
+    week: c.week,
+    weight: (userData.weight * (1 + c.percent / 100)).toFixed(1),
+    dose: drug.steps[Math.min(i, drug.steps.length - 1)]
+  }));
 
-  return {
-    drugName: drugInfo.name,
-    roadmap: roadmap,
-    userData: userData,
-    personalizedMessage: personalizedMessage
-  };
+  return { personalizedMessage, roadmap };
 }
