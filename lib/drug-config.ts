@@ -1,10 +1,10 @@
 // /lib/drug-config.ts
 export const DRUG_TYPES = {
-  MOUNJARO: { // 터제타파이드 (마운자로)
+  MOUNJARO: { // 터제타파이드
     name: "마운자로",
     steps: [2.5, 5, 7.5, 10, 12.5, 15],
     unit: "mg",
-    // 시트 [Clinical_Evidence] 기반 감량률 데이터
+    // 시트 [Clinical_Evidence] 기반 주차별 감량률 데이터
     clinicalData: {
       "5mg": [0, -3.0, -6.0, -8.0, -11.0, -14.0, -15.5, -16.0],
       "10mg": [0, -3.5, -6.5, -8.5, -11.5, -18.0, -20.5, -21.4],
@@ -13,7 +13,7 @@ export const DRUG_TYPES = {
     },
     references: "SURMOUNT-1 (NEJM 2022); 젭바운드 FDA 정보"
   },
-  WEGOVY: { // 세마글루타이드 (위고비)
+  WEGOVY: { // 세마글루타이드
     name: "위고비",
     steps: [0.25, 0.5, 1.0, 1.7, 2.4],
     unit: "mg",
