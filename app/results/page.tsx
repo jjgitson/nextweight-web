@@ -1,23 +1,29 @@
 // /app/results/page.tsx
 "use client";
+
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic'; // 추가
 import { generatePersonalizedAnalysis, UserData } from '../../lib/roadmap-engine';
-import RoadmapChart from '../../components/RoadmapChart';
 import { STAGES } from '../../lib/drug-config';
 import { ChevronDown } from 'lucide-react';
+
+// ✅ 차트 컴포넌트를 클라이언트 사이드에서만 불러오도록 설정 (차트 미출력 해결)
+const RoadmapChart = dynamic(() => import('../../components/RoadmapChart'), { 
+  ssr: false,
+  loading: () => <div className="w-full h-[260px] md:h-[360px] bg-slate-50 animate-pulse rounded-3xl" />
+});
 
 function ResultsContent() {
   const searchParams = useSearchParams();
   const [openSections, setOpenSections] = useState<{[key: string]: boolean}>({});
 
-  // ✅ 빌드 에러 해결: UserData 인터페이스에 정의된 모든 필드를 채워넣습니다.
   const userData: UserData = {
     userName: searchParams.get('userName') || '사용자',
-    userAge: Number(searchParams.get('userAge')) || 35, // 누락 필드 추가
-    userGender: searchParams.get('userGender') || '여성', // 누락 필드 추가
+    userAge: Number(searchParams.get('userAge')) || 35,
+    userGender: searchParams.get('userGender') || '여성',
     currentWeight: Number(searchParams.get('currentWeight')) || 80,
-    targetWeight: Number(searchParams.get('targetWeight')) || 70, // 누락 필드 추가
+    targetWeight: Number(searchParams.get('targetWeight')) || 70,
     startWeightBeforeDrug: Number(searchParams.get('startWeightBeforeDrug')) || 80,
     drugType: (searchParams.get('drugType') as 'MOUNJARO' | 'WEGOVY') || 'MOUNJARO',
     currentDose: Number(searchParams.get('currentDose')) || 0,
@@ -27,7 +33,7 @@ function ResultsContent() {
     muscleMass: searchParams.get('muscleMass') || '표준',
     exercise: searchParams.get('exercise') || '안 함',
     mainConcern: searchParams.get('mainConcern') || '요요',
-    resolution: searchParams.get('resolution') || '', // 누락 필드 추가
+    resolution: searchParams.get('resolution') || '',
   };
 
   const analysis = generatePersonalizedAnalysis(userData);
@@ -36,7 +42,7 @@ function ResultsContent() {
     <div className="min-h-screen bg-white pb-20 font-sans">
       <div className="max-w-md mx-auto px-6 pt-8 space-y-6 md:max-w-2xl">
         
-        {/* Status Card: Above-the-fold */}
+        {/* Status Card */}
         <div className="bg-slate-900 text-white p-8 rounded-[40px] shadow-2xl space-y-4">
           <div className="flex justify-between items-end">
             <div>
@@ -46,7 +52,6 @@ function ResultsContent() {
             <div className="text-right text-[11px] font-bold opacity-70">
               <p>{analysis.statusCard.drugInfo}</p>
               <p>{analysis.statusCard.budget} 전략</p>
-              <p className="text-blue-400">고민: {analysis.statusCard.mainConcern}</p>
             </div>
           </div>
           <div className="pt-4 border-t border-white/10">
@@ -65,34 +70,31 @@ function ResultsContent() {
           ))}
         </div>
 
-        {/* ROI Summary */}
-        <p className="text-center text-blue-700 font-bold text-xs">💡 {analysis.roiSummary}</p>
+        {/* Action Sentence */}
+        <p className="text-center text-slate-800 font-bold text-lg px-2 italic leading-snug">
+          “{analysis.currentStage.msg}”
+        </p>
 
-        {/* 4-Stage Horizontal Bar */}
+        {/* 4-Stage Bar */}
         <div className="flex items-center justify-between px-2 pt-2">
           {STAGES.map((s) => {
             const isCurrent = s.phase === analysis.currentStage.phase;
             const isPast = userData.currentWeek > s.end;
             return (
               <div key={s.phase} className="flex-1 flex flex-col items-center relative">
-                <div className={`h-1 w-full mb-3 rounded-full ${isCurrent ? 'bg-blue-600' : isPast ? 'bg-slate-300' : 'bg-slate-100 opacity-50'}`} />
-                <span className={`text-[10px] font-black ${isCurrent ? 'text-blue-600' : 'text-slate-400'}`}>{s.name}</span>
+                <div className={`h-1 w-full mb-3 rounded-full transition-all ${isCurrent ? 'bg-blue-600' : isPast ? 'bg-slate-300' : 'bg-slate-100 opacity-50'}`} />
+                <span className={`text-[10px] font-black ${isCurrent ? 'text-blue-600' : 'text-slate-400'}`}>{s.icon} {s.name}</span>
               </div>
             );
           })}
         </div>
 
-        {/* Action Sentence */}
-        <p className="text-center text-slate-800 font-bold text-lg px-2 italic leading-snug">
-          “{analysis.currentStage.msg}”
-        </p>
-
-        {/* Chart */}
-        <div className="bg-white rounded-3xl overflow-hidden border border-slate-50 shadow-sm min-h-[260px] md:min-h-[360px]">
+        {/* ✅ 차트 컴포넌트 호출 */}
+        <div className="bg-white rounded-3xl overflow-hidden border border-slate-50 shadow-sm">
           <RoadmapChart userData={userData} analysis={analysis} />
         </div>
 
-        {/* Details: Collapsed by default */}
+        {/* 상세 설명 (차트 아래) */}
         <div className="space-y-2 border-t border-slate-50 pt-6">
           {[
             { id: 'cta', title: '나의 체중 경로 관리하기', content: <button className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl">플랜 생성 및 알림 받기</button> },
@@ -101,7 +103,7 @@ function ResultsContent() {
             { id: 'disclaimer', title: '비의료 자기관리 면책 문구', content: "본 서비스는 의료 진단이 아닌 자기관리 가이드 도구입니다." }
           ].map(sec => (
             <div key={sec.id} className="border-b border-slate-100 last:border-0">
-              <button onClick={() => setOpenSections(prev => ({...prev, [sec.id]: !prev[sec.id]}))} className="w-full py-4 flex justify-between items-center text-slate-400 font-black text-xs uppercase tracking-widest">
+              <button onClick={() => setOpenSections(prev => ({...prev, [sec.id]: !prev[sec.id]}))} className="w-full py-5 flex justify-between items-center text-slate-400 font-black text-xs uppercase tracking-widest">
                 <span>{sec.title}</span>
                 <ChevronDown size={14} className={`transition-transform ${openSections[sec.id] ? 'rotate-180' : ''}`} />
               </button>
@@ -115,5 +117,9 @@ function ResultsContent() {
 }
 
 export default function ResultsPage() {
-  return <Suspense fallback={<div className="p-20 text-center font-black text-slate-300 tracking-widest">ANALYZING BRIDGE...</div>}><ResultsContent /></Suspense>;
+  return (
+    <Suspense fallback={<div className="p-20 text-center font-black text-slate-300">ANALYZING BRIDGE...</div>}>
+      <ResultsContent />
+    </Suspense>
+  );
 }
