@@ -10,23 +10,31 @@ import {
   ReferenceDot,
 } from 'recharts';
 
-interface RoadmapChartProps {
-  userData: {
-    startWeight: number;
-  };
-  analysis: {
-    userLossPct: number[];
-    weeks: number[];
-  };
-}
+type RoadmapChartProps = {
+  userData: any;
+  analysis: any;
+};
 
 export default function RoadmapChart({ userData, analysis }: RoadmapChartProps) {
-  if (!analysis || !analysis.userLossPct || analysis.userLossPct.length === 0)
-    return null;
+  if (!analysis) return null;
 
-  const chartData = analysis.weeks.map((week, idx) => ({
+  // analysis.userLossPct가 배열(주차별)일 수도 있고, 단일 값일 수도 있음
+  const lossArr: number[] = Array.isArray(analysis.userLossPct)
+    ? analysis.userLossPct
+    : typeof analysis.userLossPct === 'number'
+      ? [analysis.userLossPct]
+      : [];
+
+  if (lossArr.length === 0) return null;
+
+  // weeks가 없으면 1..N으로 생성
+  const weeksArr: number[] = Array.isArray(analysis.weeks) && analysis.weeks.length === lossArr.length
+    ? analysis.weeks
+    : Array.from({ length: lossArr.length }, (_, i) => i + 1);
+
+  const chartData = weeksArr.map((week, idx) => ({
     week,
-    userLossPct: analysis.userLossPct[idx],
+    userLossPct: lossArr[idx],
   }));
 
   const lastPoint = chartData[chartData.length - 1];
@@ -36,10 +44,10 @@ export default function RoadmapChart({ userData, analysis }: RoadmapChartProps) 
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
           <XAxis dataKey="week" />
-          {/* 기존 [0, -25] → [-25, 0] 으로 수정 */}
+          {/* 핵심: 도메인 오름차순으로 수정 */}
           <YAxis domain={[-25, 0]} hide />
           <Tooltip
-            formatter={(value: number) => `${value.toFixed(1)}%`}
+            formatter={(value: number) => `${Number(value).toFixed(1)}%`}
             labelFormatter={(label: number) => `Week ${label}`}
           />
           <Line
