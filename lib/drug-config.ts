@@ -1,45 +1,30 @@
 // /lib/drug-config.ts
-export const CLINICAL_WEEKS = [0, 4, 8, 12, 20, 36, 52, 72];
 
-export interface MounjaroPoint {
-  week: number; placebo: number; mg5: number; mg10: number; mg15: number;
-}
+export const STAGES = [
+  { id: 'adaptation', name: '적응기', icon: '💧', start: 0, end: 4, color: '#3B82F6' },
+  { id: 'loss', name: '감량기', icon: '🔥', start: 4, end: 16, color: '#10B981' },
+  { id: 'bridge', name: '가교기', icon: '🌉', start: 16, end: 36, color: '#F59E0B' },
+  { id: 'maintenance', name: '유지기', icon: '🛡️', start: 36, end: 72, color: '#8B5CF6' }
+];
 
-export interface WegovyPoint {
-  week: number; placebo: number; mg24: number;
-}
-
-export const DRUG_TYPES = {
-  MOUNJARO: {
-    name: "터제타파이드", // 티르제타파이드 -> 터제타파이드 수정
-    steps: [2.5, 5, 7.5, 10, 12.5, 15],
-    unit: "mg",
-    clinicalData: [
-      { week: 0, placebo: 0, mg5: 0, mg10: 0, mg15: 0 },
-      { week: 4, placebo: -1, mg5: -3, mg10: -3.5, mg15: -3.8 },
-      { week: 8, placebo: -1.6, mg5: -6, mg10: -6.5, mg15: -7 },
-      { week: 12, placebo: -2, mg5: -8, mg10: -8.5, mg15: -9 },
-      { week: 20, placebo: -2.7, mg5: -11, mg10: -11.5, mg15: -12 },
-      { week: 36, placebo: -3, mg5: -14, mg10: -18, mg15: -19 },
-      { week: 52, placebo: -3.2, mg5: -15.5, mg10: -20.5, mg15: -21.5 },
-      { week: 72, placebo: -2.4, mg5: -16, mg10: -21.4, mg15: -22.5 }
-    ] as MounjaroPoint[],
-    references: "SURMOUNT-1 (NEJM 2022); Zepbound FDA 정보"
-  },
+export const CLINICAL_DATA = {
   WEGOVY: {
     name: "위고비",
-    steps: [0.25, 0.5, 1.0, 1.7, 2.4],
-    unit: "mg",
-    clinicalData: [
-      { week: 0, placebo: 0, mg24: 0 },
-      { week: 4, placebo: -1, mg24: -2.2 },
-      { week: 8, placebo: -1.6, mg24: -4 },
-      { week: 12, placebo: -2, mg24: -6 },
-      { week: 20, placebo: -2.7, mg24: -9.4 },
-      { week: 36, placebo: -3, mg24: -13.3 },
-      { week: 52, placebo: -3.2, mg24: -15.4 },
-      { week: 72, placebo: -2.4, mg24: -16.0 }
-    ] as WegovyPoint[],
-    references: "STEP 1 (NEJM 2021); Wegovy FDA 정보"
+    weeks: [0, 4, 8, 12, 16, 20, 28, 36, 44, 52, 60, 68],
+    values: [0, -2.2, -4.0, -6.0, -7.8, -9.4, -11.7, -13.3, -14.6, -15.4, -15.9, -15.5]
+  },
+  MOUNJARO: {
+    name: "터제타파이드",
+    weeks: [0, 4, 8, 12, 16, 20, 24, 36, 48, 60, 72],
+    dose: {
+      "5mg":  [0, -3.0, -6.0, -8.0, -9.5, -11.0, -12.0, -14.0, -15.0, -15.8, -16.0],
+      "10mg": [0, -3.5, -6.5, -8.5, -10.0, -11.5, -13.5, -18.0, -20.0, -21.0, -21.4],
+      "15mg": [0, -3.8, -7.0, -9.0, -10.5, -12.0, -14.5, -19.0, -21.0, -22.0, -22.5]
+    }
   }
+};
+
+export const DRUG_TYPES = {
+  MOUNJARO: { name: "터제타파이드", steps: [2.5, 5, 7.5, 10, 12.5, 15], unit: "mg" },
+  WEGOVY: { name: "위고비", steps: [0.25, 0.5, 1.0, 1.7, 2.4], unit: "mg" }
 };
