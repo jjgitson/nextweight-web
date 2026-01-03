@@ -158,14 +158,14 @@ export default function RoadmapChart({ userData, analysis }: RoadmapChartProps) 
               isAnimationActive={false}
             />
             {lastPoint && (
-              <ReferenceDot
-                x={lastPoint.week}
-                y={lastPoint.userLossPct}
-                r={4}
-                fill="#22c55e"
-                stroke="none"
-                isFront
-              />
+         <ReferenceDot
+  x={lastPoint.week}
+  y={lastPoint.userLossPct}
+  r={4}
+  fill="#22c55e"
+  stroke="none"
+/>
+
             )}
           </LineChart>
         </ResponsiveContainer>
