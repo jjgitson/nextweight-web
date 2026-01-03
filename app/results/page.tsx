@@ -18,8 +18,16 @@ function safeNumber(v: any, fallback: number) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function getUserDataFromSearchParams(sp: ReturnType<typeof useSearchParams>): UserData {
-  return {
+type ExtraMeta = {
+  startDate?: string;
+};
+
+function getUserDataFromSearchParams(sp: ReturnType<typeof useSearchParams>): { userData: UserData; meta: ExtraMeta } {
+  const meta: ExtraMeta = {
+    startDate: sp.get("startDate") || undefined,
+  };
+
+  const userData: UserData = {
     userName: sp.get("userName") || "사용자",
     userAge: safeNumber(sp.get("userAge"), 35),
     userGender: (sp.get("userGender") as any) || "여성",
@@ -30,12 +38,10 @@ function getUserDataFromSearchParams(sp: ReturnType<typeof useSearchParams>): Us
     drugStatus: (sp.get("drugStatus") as any) || "사용 전",
     drugType: (sp.get("drugType") as any) || "MOUNJARO",
 
-    startWeightBeforeDrug: safeNumber(sp.get("startWeightBeforeDrug"), 80),
+    startWeightBeforeDrug: safeNumber(sp.get("startWeightBeforeDrug"), safeNumber(sp.get("currentWeight"), 80)),
 
     currentDose: safeNumber(sp.get("currentDose"), 0),
-    currentWeek: safeNumber(sp.get("currentWeek"), 1),
-
-    startDate: sp.get("startDate") || undefined,
+    currentWeek: Math.max(1, safeNumber(sp.get("currentWeek"), 1)),
 
     muscleMass: (sp.get("muscleMass") as any) || "표준",
     exercise: (sp.get("exercise") as any) || "안 함",
@@ -43,13 +49,18 @@ function getUserDataFromSearchParams(sp: ReturnType<typeof useSearchParams>): Us
     mainConcern: (sp.get("mainConcern") as any) || "요요",
     resolution: sp.get("resolution") || "",
   };
+
+  return { userData, meta };
 }
 
-function normalizeUserData(raw: any): UserData | null {
+function normalizeUserData(raw: any): { userData: UserData; meta: ExtraMeta } | null {
   if (!raw || typeof raw !== "object") return null;
 
-  // 최소 필수값만 정리 (없는 건 안전한 기본값으로)
-  const out: UserData = {
+  const meta: ExtraMeta = {
+    startDate: raw.startDate ? String(raw.startDate) : undefined,
+  };
+
+  const userData: UserData = {
     userName: String(raw.userName ?? "사용자"),
     userAge: safeNumber(raw.userAge, 35),
     userGender: (raw.userGender as any) ?? "여성",
@@ -63,10 +74,7 @@ function normalizeUserData(raw: any): UserData | null {
     startWeightBeforeDrug: safeNumber(raw.startWeightBeforeDrug, safeNumber(raw.currentWeight, 80)),
 
     currentDose: safeNumber(raw.currentDose, 0),
-    // 온보딩은 1주차 이상이므로, 0이나 NaN이면 1로 보정
     currentWeek: Math.max(1, safeNumber(raw.currentWeek, 1)),
-
-    startDate: raw.startDate ? String(raw.startDate) : undefined,
 
     muscleMass: (raw.muscleMass as any) ?? "표준",
     exercise: (raw.exercise as any) ?? "안 함",
@@ -75,7 +83,7 @@ function normalizeUserData(raw: any): UserData | null {
     resolution: String(raw.resolution ?? ""),
   };
 
-  return out;
+  return { userData, meta };
 }
 
 export default function ResultsPage() {
@@ -91,6 +99,7 @@ function ResultsContent() {
   const router = useRouter();
 
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [meta, setMeta] = useState<ExtraMeta>({});
   const [open, setOpen] = useState<Record<string, boolean>>({
     summary: true,
     details: false,
@@ -107,7 +116,8 @@ function ResultsContent() {
         const parsed = JSON.parse(raw);
         const normalized = normalizeUserData(parsed);
         if (normalized) {
-          setUserData(normalized);
+          setUserData(normalized.userData);
+          setMeta(normalized.meta);
           return;
         }
       }
@@ -115,7 +125,8 @@ function ResultsContent() {
 
     // fallback: query string
     const fromQuery = getUserDataFromSearchParams(searchParams);
-    setUserData(fromQuery);
+    setUserData(fromQuery.userData);
+    setMeta(fromQuery.meta);
   }, [searchParams]);
 
   const analysis = useMemo(() => {
@@ -146,14 +157,14 @@ function ResultsContent() {
       <div style={styles.container}>
         {/* 헤더 카드 */}
         <div style={styles.hero}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-            <div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ minWidth: 260 }}>
               <div style={styles.badge}>{analysis.statusCard.stageName}</div>
               <div style={styles.h1}>{analysis.statusCard.weekText}</div>
               <div style={styles.sub}>{analysis.statusCard.comparison}</div>
             </div>
 
-            <div style={{ textAlign: "right" }}>
+            <div style={{ textAlign: "right", minWidth: 200 }}>
               <div style={styles.kv}>{analysis.statusCard.drugInfo}</div>
               <div style={styles.kv}>{analysis.statusCard.budget} 전략</div>
             </div>
@@ -171,9 +182,7 @@ function ResultsContent() {
         </div>
 
         {/* 메시지 */}
-        <div style={styles.quote}>
-          “{analysis.currentStage.msg}”
-        </div>
+        <div style={styles.quote}>“{analysis.currentStage.msg}”</div>
 
         {/* 차트 */}
         <div style={styles.chartCard}>
@@ -187,11 +196,11 @@ function ResultsContent() {
           {open.summary && (
             <div style={styles.accBody}>
               <ul style={styles.ul}>
-                <li>현재 주차: {userData.currentWeek}주차</li>
+                <li>현재 투약 주차: {userData.currentWeek}주차</li>
                 <li>현재 체중: {userData.currentWeight} kg</li>
                 <li>목표 체중: {userData.targetWeight} kg</li>
                 <li>투약 전 시작 체중: {userData.startWeightBeforeDrug} kg</li>
-                {userData.startDate ? <li>투약 시작일: {userData.startDate}</li> : null}
+                {meta.startDate ? <li>투약 시작일: {meta.startDate}</li> : null}
               </ul>
             </div>
           )}
@@ -200,8 +209,7 @@ function ResultsContent() {
           {open.details && (
             <div style={styles.accBody}>
               <div style={styles.muted}>
-                현재 단계( {analysis.currentStage.name} )를 기준으로 안내 문구를 확장해 넣을 수 있습니다.
-                지금은 UI 정리와 값 전달 정상화부터 우선 반영했습니다.
+                현재 단계( {analysis.currentStage.name} ) 기준으로 상세 설명을 연결할 수 있도록 구조만 정리해 두었습니다.
               </div>
             </div>
           )}
@@ -210,7 +218,7 @@ function ResultsContent() {
           {open.evidence && (
             <div style={styles.accBody}>
               <div style={styles.muted}>
-                임상 비교 근거 섹션은 콘텐츠 원고/표를 확정하면, 여기로 붙이는 구조로 정리해두는 게 좋습니다.
+                근거 문구/표를 확정하면 이 섹션에 채우는 방식으로 구성했습니다.
               </div>
             </div>
           )}
@@ -225,7 +233,7 @@ function ResultsContent() {
           )}
         </div>
 
-        <div style={{ marginTop: 16 }}>
+        <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
           <button
             style={styles.secondaryBtn}
             onClick={() => {
