@@ -1,10 +1,10 @@
 // /lib/drug-config.ts
 
-// 4-Stage Metabolic Bridge 구간 정의
+// 4-Stage Metabolic Bridge 구간 정의 (v1.0 요구사항 준수)
 export const STAGES = [
-  { phase: 'adaptation', name: '적응기', icon: '💧', start: 0, end: 4.9, color: '#3B82F6', msg: "많은 분들이 이 시기에 충분한 수분 섭취가 몸의 적응을 돕는다고 느낍니다." },
-  { phase: 'loss', name: '감량기', icon: '🔥', start: 5, end: 16.9, color: '#10B981', msg: "이 시점에서는 체지방 위주의 감량을 확인하는 것이 성취감을 높이는 데 효과적입니다." },
-  { phase: 'bridge', name: '가교기', icon: '🌉', start: 17, end: 36.9, color: '#F59E0B', msg: "많은 사람들이 이 단계에서 근손실 관리가 향후 유지의 핵심임을 인지하기 시작합니다." },
+  { phase: 'adaptation', name: '적응기', icon: '💧', start: 0, end: 4, color: '#3B82F6', msg: "많은 분들이 이 시기에 충분한 수분 섭취가 몸의 적응을 돕는다고 느낍니다." },
+  { phase: 'loss', name: '감량기', icon: '🔥', start: 5, end: 16, color: '#10B981', msg: "이 시점에서는 체지방 위주의 감량을 확인하는 것이 성취감을 높이는 데 효과적입니다." },
+  { phase: 'bridge', name: '가교기', icon: '🌉', start: 17, end: 36, color: '#F59E0B', msg: "많은 사람들이 이 단계에서 근손실 관리가 향후 유지의 핵심임을 인지하기 시작합니다." },
   { phase: 'maintenance', name: '유지기', icon: '🛡️', start: 37, end: 72, color: '#8B5CF6', msg: "이제는 스스로의 루틴만으로도 건강한 대사 체계가 유지된다는 확신을 갖게 되는 시기입니다." }
 ];
 
@@ -18,6 +18,8 @@ export const CLINICAL_DATA = {
     name: "Tirzepatide", // SURMOUNT-1 (NEJM 2022)
     weeks: [0, 4, 8, 12, 20, 36, 52, 72],
     dose: {
+      "5mg":  [0, -3.0, -6.0, -8.0, -11.0, -14.0, -15.5, -16.0],
+      "10mg": [0, -3.5, -6.5, -8.5, -11.5, -18.0, -20.5, -21.4],
       "15mg": [0, -3.8, -7.0, -9.0, -12.0, -19.0, -21.5, -22.5]
     }
   }
