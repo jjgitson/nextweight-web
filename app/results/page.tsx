@@ -22,8 +22,6 @@ function ResultsContent() {
     budget: searchParams.get('budget') || '표준형',
     muscleMass: searchParams.get('muscleMass') || '표준',
     exercise: searchParams.get('exercise') || '안 함',
-    mainConcern: searchParams.get('mainConcern') || '요요',
-    userAge: 35, userGender: '여성', targetWeight: 70, resolution: ''
   };
 
   const analysis = generatePersonalizedAnalysis(userData);
@@ -32,7 +30,7 @@ function ResultsContent() {
     <div className="min-h-screen bg-white pb-20 font-sans">
       <div className="max-w-md mx-auto px-6 pt-8 space-y-6 md:max-w-2xl">
         
-        {/* 1. Status Card: 단일 컴포넌트 */}
+        {/* Phase 2-A: Status Card */}
         <div className="bg-slate-900 text-white p-8 rounded-[40px] shadow-2xl space-y-4">
           <div className="flex justify-between items-end">
             <div>
@@ -41,7 +39,7 @@ function ResultsContent() {
             </div>
             <div className="text-right text-[11px] font-bold opacity-70">
               <p>{analysis.statusCard.drugInfo}</p>
-              <p>{analysis.statusCard.budget} 예산</p>
+              <p>{analysis.statusCard.budget} 전략</p>
             </div>
           </div>
           <div className="pt-4 border-t border-white/10">
@@ -49,7 +47,7 @@ function ResultsContent() {
           </div>
         </div>
 
-        {/* 2. GPS KPI Block: 3개 블록 */}
+        {/* Phase 2-B: GPS KPI Row */}
         <div className="grid grid-cols-3 gap-3">
           {analysis.gps.map((kpi, idx) => (
             <div key={idx} className="bg-slate-50 p-4 rounded-3xl border border-slate-100 text-center">
@@ -60,39 +58,37 @@ function ResultsContent() {
           ))}
         </div>
 
-        {/* 3. ROI Summary: 1줄 요약 */}
-        <p className="text-center text-blue-700 font-bold text-xs">💡 {analysis.roiSummary}</p>
+        {/* Phase 2-C: One Action Sentence */}
+        <p className="text-center text-slate-800 font-bold text-lg px-2 italic leading-snug">
+          “{analysis.currentStage.msg}”
+        </p>
 
-        {/* 4. 4-Stage Horizontal Bar: 단일 수평 바 */}
+        {/* Phase 3: 4-Stage Horizontal Bar */}
         <div className="flex items-center justify-between px-2 pt-2">
           {STAGES.map((s) => {
             const isCurrent = s.phase === analysis.currentStage.phase;
             const isPast = userData.currentWeek > s.end;
             return (
               <div key={s.phase} className="flex-1 flex flex-col items-center relative">
-                <div className={`h-1.5 w-full mb-2 rounded-full ${isCurrent ? 'bg-blue-600' : isPast ? 'bg-slate-300' : 'bg-slate-100 opacity-50'}`} />
-                <span className={`text-[10px] font-black ${isCurrent ? 'text-blue-600' : 'text-slate-400'}`}>{s.name}</span>
-                {isCurrent && <div className="absolute top-7 z-10 text-[20px]">{s.icon}</div>}
+                <div className={`h-1 w-full mb-3 rounded-full transition-all ${isCurrent ? 'bg-blue-600' : isPast ? 'bg-slate-300' : 'bg-slate-100 opacity-50'}`} />
+                <span className={`text-[10px] font-black ${isCurrent ? 'text-blue-600' : 'text-slate-400'}`}>{s.icon} {s.name}</span>
               </div>
             );
           })}
         </div>
 
-        {/* 5. Single Action Sentence: 성찰적 어조 */}
-        <p className="text-center text-slate-800 font-bold text-lg px-2 italic">“{analysis.actionSentence}”</p>
-
-        {/* 6. Chart Placement */}
-        <div className="bg-white rounded-3xl overflow-hidden">
+        {/* Phase 2-D: Chart */}
+        <div className="bg-white rounded-3xl overflow-hidden border border-slate-50 shadow-sm">
           <RoadmapChart userData={userData} analysis={analysis} />
         </div>
 
-        {/* 7. Collapsible Details: 하단 이동 및 접힘 */}
+        {/* Phase 4: Collapsible Details (Below chart only) */}
         <div className="space-y-2 border-t border-slate-50 pt-6">
           {[
             { id: 'cta', title: '나의 체중 경로 관리하기', content: <button className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl">플랜 생성 및 알림 받기</button> },
             { id: 'desc', title: '단계별 상세 설명', content: analysis.currentStage.msg },
-            { id: 'clinical', title: '임상 비교 데이터 근거', content: "본 데이터는 NEJM(2021, 2022) 임상 연구(STEP-1, SURMOUNT-1)를 근거로 산출됩니다." },
-            { id: 'disclaimer', title: '비의료 자기관리 면책 문구', content: "본 서비스는 의료 진단이나 처방이 아닌 자기관리 가이드 도구입니다." }
+            { id: 'clinical', title: '임상 비교 데이터 근거', content: "본 분석은 NEJM(2021, 2022) 임상 연구 데이터를 기준으로 산출됩니다." },
+            { id: 'disclaimer', title: '비의료 자기관리 면책 문구', content: "본 서비스는 의료 진단이 아닌 자기관리 가이드 도구입니다. 모든 의학적 결정은 반드시 의료진과 상의하세요." }
           ].map(sec => (
             <div key={sec.id} className="border-b border-slate-100 last:border-0">
               <button onClick={() => setOpenSections(prev => ({...prev, [sec.id]: !prev[sec.id]}))} className="w-full py-5 flex justify-between items-center text-slate-400 font-black text-xs uppercase tracking-widest">
