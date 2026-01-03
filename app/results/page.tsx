@@ -11,7 +11,7 @@ function ResultsContent() {
   const searchParams = useSearchParams();
   const [openSections, setOpenSections] = useState<{[key: string]: boolean}>({});
 
-  // ⚠️ 인터페이스와 1:1 매칭되도록 수정하여 빌드 에러 해결
+  // ⚠️ 인터페이스와 100% 매칭되도록 데이터 구성
   const userData: UserData = {
     userName: searchParams.get('userName') || '사용자',
     userAge: Number(searchParams.get('userAge')) || 35,
@@ -61,23 +61,21 @@ function ResultsContent() {
               <p className="text-[10px] font-black text-slate-900 truncate">{kpi.value}</p>
               <div className={`h-1 w-4 mx-auto mt-2 rounded-full ${kpi.status === 'attention' ? 'bg-orange-500 animate-pulse' : 'bg-blue-500'}`} />
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
 
-        {/* Action Sentence */}
         <p className="text-center text-slate-800 font-bold text-lg px-2 italic leading-snug">
           “{analysis.currentStage.msg}”
         </p>
 
-        {/* Chart Area */}
         <div className="bg-white rounded-3xl overflow-hidden border border-slate-50 shadow-sm">
           <RoadmapChart userData={userData} analysis={analysis} />
         </div>
 
-        {/* Collapsible Details */}
         <div className="space-y-2 border-t border-slate-50 pt-6">
           {[
             { id: 'cta', title: '나의 체중 경로 관리하기', content: <button className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl">플랜 생성 및 알림 받기</button> },
+            { id: 'desc', title: '단계별 상세 설명', content: analysis.currentStage.msg },
             { id: 'clinical', title: '임상 비교 데이터 근거', content: "본 분석은 NEJM(2021, 2022) 임상 데이터를 기준으로 산출됩니다." },
             { id: 'disclaimer', title: '비의료 자기관리 면책 문구', content: "본 서비스는 의료 진단이 아닌 자기관리 가이드 도구입니다." }
           ].map(sec => (
