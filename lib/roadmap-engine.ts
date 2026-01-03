@@ -4,7 +4,7 @@ import { CLINICAL_DATA, STAGES, DRUG_TYPES } from './drug-config';
 export interface UserData {
   userName: string; currentWeight: number; startWeightBeforeDrug: number;
   drugType: keyof typeof DRUG_TYPES; currentDose: number; currentWeek: number;
-  drugStatus: string; budget: string; muscleMass: string; exercise: string; mainConcern: string;
+  drugStatus: string; budget: string; muscleMass: string; exercise: string;
 }
 
 export function generatePersonalizedAnalysis(userData: UserData) {
@@ -14,10 +14,11 @@ export function generatePersonalizedAnalysis(userData: UserData) {
 
   let clinicalVal = 0;
   const drugConfig = DRUG_TYPES[userData.drugType];
-  const clinicalRef = CLINICAL_DATA[userData.drugType];
+  const isMounjaro = userData.drugType === 'MOUNJARO';
+  const clinicalRef = isMounjaro ? CLINICAL_DATA.MOUNJARO : CLINICAL_DATA.WEGOVY;
   const idx = clinicalRef.weeks.findIndex(w => w >= userData.currentWeek);
   
-  if (userData.drugType === 'MOUNJARO') {
+  if (isMounjaro) {
     const doseKey = `${userData.currentDose}mg` as keyof typeof CLINICAL_DATA.MOUNJARO.dose;
     clinicalVal = (CLINICAL_DATA.MOUNJARO.dose[doseKey] || CLINICAL_DATA.MOUNJARO.dose["15mg"])[idx === -1 ? 10 : idx];
   } else {
@@ -25,11 +26,6 @@ export function generatePersonalizedAnalysis(userData: UserData) {
   }
 
   const diffPct = (userLossPct - clinicalVal).toFixed(1);
-
-  // ROI Summary
-  const roiSummary = userData.budget === '표준형' 
-    ? `현재 예산 전략(${userData.budget}) 기준, 재투약 방어 효과가 기대됩니다.`
-    : `현재 예산 전략(${userData.budget}) 기준, 기초대사량 하한선 사수에 집중하고 있습니다.`;
 
   return {
     userLossPct: Number(userLossPct.toFixed(1)),
@@ -46,7 +42,6 @@ export function generatePersonalizedAnalysis(userData: UserData) {
       { label: 'P Protein', value: userData.muscleMass, status: userData.muscleMass === '이하' ? 'attention' : 'normal' },
       { label: 'S Strength', value: userData.exercise, status: userData.exercise === '안 함' ? 'attention' : 'normal' }
     ],
-    roiSummary,
-    actionSentence: currentStage.msg
+    roiSummary: `현재 예산 전략(${userData.budget}) 기준, 재투약 방어 효과가 기대됩니다.`
   };
 }
