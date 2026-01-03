@@ -22,6 +22,7 @@ export const CLINICAL_DATA = {
   }
 };
 
+// ⚠️ 빌드 에러 해결을 위해 반드시 export 포함
 export const DRUG_TYPES = {
   MOUNJARO: { name: "터제타파이드", steps: [2.5, 5, 7.5, 10, 12.5, 15], unit: "mg" },
   WEGOVY: { name: "위고비", steps: [0.25, 0.5, 1.0, 1.7, 2.4], unit: "mg" }
