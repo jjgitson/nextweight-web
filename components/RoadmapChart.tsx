@@ -4,33 +4,29 @@ import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveCo
 import { STAGES, CLINICAL_DATA } from '../lib/drug-config';
 
 export default function RoadmapChart({ userData, analysis }: { userData: any, analysis: any }) {
-  // 임상 곡선 데이터 상시 생성 (사용자 데이터 유무 무관)
-  const chartData = Array.from({ length: 73 }, (_, week) => {
-    const getVal = (drugKey: 'WEGOVY' | 'MOUNJARO', w: number) => {
-      const drug = CLINICAL_DATA[drugKey];
-      const idx = drug.weeks.findIndex(dw => dw >= w);
-      const values = drugKey === 'MOUNJARO' ? (drug as any).dose["15mg"] : (drug as any).values;
-      return values[idx === -1 ? values.length - 1 : idx] || 0;
-    };
-    return { week, mounjaro: getVal('MOUNJARO', week), wegovy: getVal('WEGOVY', week) };
-  });
+  // Phase 1 Baseline: 임상 곡선 데이터 상시 생성
+  const chartData = Array.from({ length: 73 }, (_, week) => ({
+    week,
+    wegovy: CLINICAL_DATA.WEGOVY.values[CLINICAL_DATA.WEGOVY.weeks.findIndex(w => w >= week)] || -16,
+    mounjaro: CLINICAL_DATA.MOUNJARO.dose["15mg"][CLINICAL_DATA.MOUNJARO.weeks.findIndex(w => w >= week)] || -22.5
+  }));
 
   return (
-    // 요구사항: Desktop 360px, Mobile 260px 고정
+    // Phase 1: Chart container min-height (Desktop 360, Mobile 260)
     <div className="w-full h-[260px] md:h-[360px] bg-white relative">
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={chartData} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
           <XAxis dataKey="week" type="number" domain={[0, 72]} hide />
-          {/* 요구사항: Y축 0% to -25% 고정 */}
           <YAxis domain={[0, -25]} hide />
           <Tooltip formatter={(val: any) => [`${Number(val).toFixed(1)}%`, '']} />
           {STAGES.map(s => <ReferenceArea key={s.phase} x1={s.start} x2={s.end} fill={s.color} fillOpacity={0.03} />)}
           
+          {/* Phase 1 Baseline: Clinical curves render always */}
           <Line type="monotone" dataKey="mounjaro" stroke="#94a3b8" strokeDasharray="4 4" dot={false} strokeWidth={1} isAnimationActive={false} />
           <Line type="monotone" dataKey="wegovy" stroke="#cbd5e1" strokeDasharray="4 4" dot={false} strokeWidth={1} isAnimationActive={false} />
           
-          {/* 사용자 마커: 데이터가 1개여도 렌더링 */}
+          {/* Phase 1 Baseline: User marker even with one record */}
           {userData.drugStatus === '사용 중' && (
             <ReferenceDot x={userData.currentWeek} y={analysis.userLossPct} r={7} fill="#2563EB" stroke="white" strokeWidth={3}
               label={{ position: 'top', value: '나의 현재', fill: '#1e40af', fontSize: 11, fontWeight: "900" }} />
