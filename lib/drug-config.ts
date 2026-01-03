@@ -1,14 +1,12 @@
 // /lib/drug-config.ts
 
-// 4단계 스테이지 정의
 export const STAGES = [
-  { id: 'adaptation', name: '적응기', icon: '💧', start: 0, end: 4, color: '#3B82F6', msg: "몸이 변화를 받아들이는 중입니다. 수분 2L로 부작용을 관리하세요." },
-  { id: 'loss', name: '감량기', icon: '🔥', start: 4, end: 16, color: '#10B981', msg: "체지방 연소 피크 구간입니다. 단백질 100g 섭취로 근육을 사수하세요." },
-  { id: 'bridge', name: '가교기', icon: '🌉', start: 16, end: 36, color: '#F59E0B', msg: "대사 전환 엔진이 가동됩니다. 저항성 운동이 요요를 결정합니다." },
-  { id: 'maintenance', name: '유지기', icon: '🛡️', start: 36, end: 72, color: '#8B5CF6', msg: "건강한 대사 체계가 안착되었습니다. 요요 방어선을 완성하세요." }
+  { phase: 'adaptation', name: '적응기', icon: '💧', start: 0, end: 4, color: '#3B82F6', msg: "몸이 변화를 받아들이는 중입니다. 수분 2L로 부작용을 관리하세요." },
+  { phase: 'loss', name: '감량기', icon: '🔥', start: 4, end: 16, color: '#10B981', msg: "체지방 연소 피크 구간입니다. 단백질 100g 섭취로 근육을 사수하세요." },
+  { phase: 'bridge', name: '가교기', icon: '🌉', start: 16, end: 36, color: '#F59E0B', msg: "대사 전환 엔진이 가동됩니다. 저항성 운동이 요요를 결정합니다." },
+  { phase: 'maintenance', name: '유지기', icon: '🛡️', start: 36, end: 72, color: '#8B5CF6', msg: "건강한 대사 체계가 안착되었습니다. 요요 방어선을 완성하세요." }
 ];
 
-// 임상 기준 데이터셋 (단위: %)
 export const CLINICAL_DATA = {
   WEGOVY: {
     name: "위고비",
