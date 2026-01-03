@@ -1,25 +1,17 @@
 // /lib/drug-config.ts
-
 export const CLINICAL_WEEKS = [0, 4, 8, 12, 20, 36, 52, 72];
 
-// 마스터 시트 [Clinical_Evidence] 데이터 반영 
 export interface MounjaroPoint {
-  week: number;
-  placebo: number;
-  mg5: number;
-  mg10: number;
-  mg15: number;
+  week: number; placebo: number; mg5: number; mg10: number; mg15: number;
 }
 
 export interface WegovyPoint {
-  week: number;
-  placebo: number;
-  mg24: number;
+  week: number; placebo: number; mg24: number;
 }
 
 export const DRUG_TYPES = {
   MOUNJARO: {
-    name: "마운자로", // 터제타파이드
+    name: "터제타파이드", // 티르제타파이드 -> 터제타파이드 수정
     steps: [2.5, 5, 7.5, 10, 12.5, 15],
     unit: "mg",
     clinicalData: [
@@ -32,7 +24,7 @@ export const DRUG_TYPES = {
       { week: 52, placebo: -3.2, mg5: -15.5, mg10: -20.5, mg15: -21.5 },
       { week: 72, placebo: -2.4, mg5: -16, mg10: -21.4, mg15: -22.5 }
     ] as MounjaroPoint[],
-    references: "SURMOUNT-1 (NEJM 2022); 젭바운드 FDA 정보 "
+    references: "SURMOUNT-1 (NEJM 2022); Zepbound FDA 정보"
   },
   WEGOVY: {
     name: "위고비",
@@ -48,6 +40,6 @@ export const DRUG_TYPES = {
       { week: 52, placebo: -3.2, mg24: -15.4 },
       { week: 72, placebo: -2.4, mg24: -16.0 }
     ] as WegovyPoint[],
-    references: "STEP 1 (NEJM 2021); 위고비 FDA 정보 "
+    references: "STEP 1 (NEJM 2021); Wegovy FDA 정보"
   }
 };
