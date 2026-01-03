@@ -1,6 +1,6 @@
 // /lib/drug-config.ts
 
-// 4단계 스테이지 정의 (요구사항 반영)
+// 4단계 스테이지 정의
 export const STAGES = [
   { id: 'adaptation', name: '적응기', icon: '💧', start: 0, end: 4, color: '#3B82F6', msg: "몸이 변화를 받아들이는 중입니다. 수분 2L로 부작용을 관리하세요." },
   { id: 'loss', name: '감량기', icon: '🔥', start: 4, end: 16, color: '#10B981', msg: "체지방 연소 피크 구간입니다. 단백질 100g 섭취로 근육을 사수하세요." },
@@ -24,9 +24,4 @@ export const CLINICAL_DATA = {
       "15mg": [0, -3.8, -7.0, -9.0, -10.5, -12.0, -14.5, -19.0, -21.0, -22.0, -22.5]
     }
   }
-};
-
-export const DRUG_TYPES = {
-  MOUNJARO: { name: "터제타파이드", steps: [2.5, 5, 7.5, 10, 12.5, 15], unit: "mg" },
-  WEGOVY: { name: "위고비", steps: [0.25, 0.5, 1.0, 1.7, 2.4], unit: "mg" }
 };
