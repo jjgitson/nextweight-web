@@ -6,7 +6,12 @@ import {
 } from 'recharts';
 import { STAGES, CLINICAL_DATA } from '../lib/drug-config';
 
-export default function RoadmapChart({ userData, analysis }: { userData: any, analysis: any }) {
+interface RoadmapChartProps {
+  userData: any;
+  analysis: any;
+}
+
+export default function RoadmapChart({ userData, analysis }: RoadmapChartProps) {
   // 0~72주 고정 차트 데이터 구성
   const chartData = Array.from({ length: 73 }, (_, week) => {
     const getVal = (drug: any, w: number, dose?: string) => {
@@ -34,20 +39,22 @@ export default function RoadmapChart({ userData, analysis }: { userData: any, an
             formatter={(value: any) => [`${value}%`, '감량률']}
           />
           
-          {/* 4-Stage 스테이지 레이어 오버레이 */}
+          {/* 🌊 4-Stage 스테이지 레이어 오버레이 */}
           {STAGES.map(s => (
             <ReferenceArea key={s.id} x1={s.start} x2={s.end} fill={s.color} fillOpacity={0.04}>
               <Label value={`${s.icon} ${s.name}`} position="insideTop" fill={s.color} fontSize={9} fontWeight="bold" />
             </ReferenceArea>
           ))}
 
+          {/* 임상 기준 곡선 (점선) */}
           <Line type="monotone" dataKey="mounjaro" stroke="#94a3b8" strokeDasharray="5 5" dot={false} name="터제타파이드 평균" />
           <Line type="monotone" dataKey="wegovy" stroke="#cbd5e1" strokeDasharray="5 5" dot={false} name="위고비 평균" />
           
+          {/* 현재 위치 마커 */}
           <ReferenceDot 
             x={userData.currentWeek} 
             y={analysis.userLossPct} 
-            r={8} fill="#2563EB" stroke="white" strokeWidth={3}
+            r={8} fill="#2563EB" stroke="white" strokeWidth={2}
             label={{ position: 'top', value: '나의 현재', fill: '#2563EB', fontSize: 11, fontWeight: "900" }} 
           />
         </ComposedChart>
