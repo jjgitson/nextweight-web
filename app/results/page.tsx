@@ -30,7 +30,7 @@ function ResultsContent() {
     <div className="min-h-screen bg-white pb-20 font-sans">
       <div className="max-w-md mx-auto px-6 pt-8 space-y-6 md:max-w-2xl">
         
-        {/* A) Current Status Card */}
+        {/* A. Status Card */}
         <div className="bg-slate-900 text-white p-8 rounded-[40px] shadow-2xl space-y-4">
           <div className="flex justify-between items-end">
             <div>
@@ -39,7 +39,7 @@ function ResultsContent() {
             </div>
             <div className="text-right text-[11px] font-bold opacity-70">
               <p>{analysis.statusCard.drugInfo}</p>
-              <p>{analysis.statusCard.budget} 예산 전략</p>
+              <p>{analysis.statusCard.budget} 전략</p>
             </div>
           </div>
           <div className="pt-4 border-t border-white/10">
@@ -47,7 +47,7 @@ function ResultsContent() {
           </div>
         </div>
 
-        {/* B) GPS Indicators */}
+        {/* B. GPS KPI Row */}
         <div className="grid grid-cols-3 gap-3">
           {analysis.gps.map((kpi, idx) => (
             <div key={idx} className="bg-slate-50 p-4 rounded-3xl border border-slate-100 text-center">
@@ -58,37 +58,34 @@ function ResultsContent() {
           ))}
         </div>
 
-        {/* ROI 요약 (GPS 하단) */}
-        <p className="text-center text-blue-700 font-bold text-xs">💡 {analysis.roiSummary}</p>
+        {/* C. One Action Sentence */}
+        <p className="text-center text-slate-800 font-bold text-lg px-2 italic">“{analysis.currentStage.msg}”</p>
 
         {/* 4-Stage Horizontal Bar */}
-        <div className="flex items-center justify-between px-2">
+        <div className="flex items-center justify-between px-2 pt-2">
           {STAGES.map((s) => {
             const isCurrent = s.phase === analysis.currentStage.phase;
             const isPast = userData.currentWeek > s.end;
             return (
               <div key={s.phase} className="flex-1 flex flex-col items-center relative">
-                <div className={`h-1 w-full mb-2 rounded-full ${isCurrent ? 'bg-blue-600' : isPast ? 'bg-slate-300' : 'bg-slate-100 opacity-50'}`} />
-                <span className={`text-[10px] font-black ${isCurrent ? 'text-blue-600' : 'text-slate-400'}`}>{s.name}</span>
+                <div className={`h-1.5 w-full mb-3 rounded-full ${isCurrent ? 'bg-blue-600' : isPast ? 'bg-slate-300' : 'bg-slate-100 opacity-50'}`} />
+                <span className={`text-[11px] font-bold ${isCurrent ? 'text-blue-600' : 'text-slate-400'}`}>{s.name}</span>
               </div>
             );
           })}
         </div>
 
-        {/* C) One Action Sentence */}
-        <p className="text-center text-slate-800 font-bold text-lg px-2 italic">“{analysis.currentStage.msg}”</p>
-
-        {/* D) Chart */}
+        {/* D. Chart */}
         <div className="bg-white rounded-3xl overflow-hidden">
           <RoadmapChart userData={userData} analysis={analysis} />
         </div>
 
-        {/* Below the chart: Collapsible sections */}
+        {/* Phase 4. Collapsible Details (Below chart) */}
         <div className="space-y-2 border-t border-slate-50 pt-6">
           {[
             { id: 'cta', title: '나의 체중 경로 관리하기', content: <button className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl">플랜 생성 및 알림 받기</button> },
             { id: 'desc', title: '단계별 상세 설명', content: analysis.currentStage.msg },
-            { id: 'clinical', title: '임상 비교 데이터 근거', content: "본 데이터는 NEJM(2021, 2022) 임상 결과인 STEP-1 및 SURMOUNT-1 데이터를 기준으로 산출됩니다." },
+            { id: 'clinical', title: '임상 비교 데이터 근거', content: "본 분석은 NEJM(2021, 2022) 임상 데이터를 기준으로 산출됩니다." },
             { id: 'disclaimer', title: '비의료 자기관리 면책 문구', content: "본 서비스는 의료 진단이 아닌 자기관리 가이드 도구입니다." }
           ].map(sec => (
             <div key={sec.id} className="border-b border-slate-100 last:border-0">
@@ -106,5 +103,5 @@ function ResultsContent() {
 }
 
 export default function ResultsPage() {
-  return <Suspense fallback={<div className="p-20 text-center font-black text-slate-300">ANALYZING...</div>}><ResultsContent /></Suspense>;
+  return <Suspense fallback={<div className="p-20 text-center font-black text-slate-300 tracking-widest">ANALYZING BRIDGE...</div>}><ResultsContent /></Suspense>;
 }
