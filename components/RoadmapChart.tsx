@@ -1,3 +1,4 @@
+// /components/RoadmapChart.tsx
 'use client';
 
 import React from 'react';
@@ -13,101 +14,33 @@ import {
 
 type RoadmapChartProps = {
   userData: any;
-  analysis: any;
+  analysis: {
+    weeks?: number[];
+    userLossPctSeries?: number[];
+  };
 };
 
-function toNumberArray(v: any): number[] {
-  if (Array.isArray(v)) {
-    return v
-      .map((x) => (typeof x === 'number' ? x : Number(x)))
-      .filter((x) => Number.isFinite(x));
-  }
-  if (typeof v === 'number' && Number.isFinite(v)) return [v];
-  if (typeof v === 'string') {
-    const n = Number(v);
-    return Number.isFinite(n) ? [n] : [];
-  }
-  return [];
-}
+export default function RoadmapChart({ analysis }: RoadmapChartProps) {
+  const weeks = Array.isArray(analysis?.weeks) ? analysis.weeks : [];
+  const series = Array.isArray(analysis?.userLossPctSeries) ? analysis.userLossPctSeries : [];
 
-function deriveSeries(analysis: any): { weeks: number[]; lossPct: number[] } {
-  if (!analysis) return { weeks: [], lossPct: [] };
-
-  // 1) 가장 흔한 형태: weeks + userLossPct 배열
-  const lossPctA = toNumberArray(analysis.userLossPct);
-  const weeksA = toNumberArray(analysis.weeks);
-  if (lossPctA.length > 0) {
-    const weeks =
-      weeksA.length === lossPctA.length
-        ? weeksA
-        : Array.from({ length: lossPctA.length }, (_, i) => i + 1);
-    return { weeks, lossPct: lossPctA };
-  }
-
-  // 2) 다른 키 이름 가능성: values, series, trajectory 등
-  // (프로젝트에서 키가 바뀌어도 차트가 완전히 죽지 않게 방어적으로 처리)
-  const candidateArrays = [
-    analysis.values,
-    analysis.series,
-    analysis.trajectory,
-    analysis.lossPct,
-    analysis.lossPercent,
-  ];
-  for (const c of candidateArrays) {
-    const arr = toNumberArray(c);
-    if (arr.length > 0) {
-      const weeks =
-        weeksA.length === arr.length
-          ? weeksA
-          : Array.from({ length: arr.length }, (_, i) => i + 1);
-      return { weeks, lossPct: arr };
-    }
-  }
-
-  // 3) 정말 단일 값만 있는 경우: 점 1개라도 찍기
-  const single =
-    typeof analysis.userLossPct === 'number'
-      ? analysis.userLossPct
-      : typeof analysis.lossPct === 'number'
-        ? analysis.lossPct
-        : typeof analysis.lossPercent === 'number'
-          ? analysis.lossPercent
-          : undefined;
-
-  if (typeof single === 'number' && Number.isFinite(single)) {
-    return { weeks: [1], lossPct: [single] };
-  }
-
-  return { weeks: [], lossPct: [] };
-}
-
-export default function RoadmapChart({ userData, analysis }: RoadmapChartProps) {
-  const { weeks, lossPct } = deriveSeries(analysis);
-
-  if (weeks.length === 0 || lossPct.length === 0) {
+  if (weeks.length === 0 || series.length === 0 || weeks.length !== series.length) {
     return (
       <div style={styles.card}>
         <div style={styles.headerRow}>
           <div style={styles.title}>Weight change</div>
+          <div style={styles.subTitle}>% change vs start</div>
         </div>
-        <div style={styles.empty}>
-          차트를 표시할 데이터가 없습니다.
-        </div>
+        <div style={styles.empty}>차트를 표시할 데이터가 없습니다.</div>
       </div>
     );
   }
 
-  const chartData = weeks.map((w, i) => ({
-    week: w,
-    userLossPct: lossPct[i],
-  }));
+  const chartData = weeks.map((w, i) => ({ week: w, userLossPct: series[i] }));
+  const last = chartData[chartData.length - 1];
 
-  const lastPoint = chartData[chartData.length - 1];
-
-  // 도메인 고정: 0% ~ -25% (감량률이므로 음수 방향)
-  // 값이 밖으로 벗어나도 라인이 완전히 사라지지 않게, 실제 값도 반영해서 조금 확장
-  const minVal = Math.min(...lossPct);
-  const maxVal = Math.max(...lossPct);
+  const minVal = Math.min(...series);
+  const maxVal = Math.max(...series);
   const domainMin = Math.min(-25, Math.floor(minVal - 1));
   const domainMax = Math.max(0, Math.ceil(maxVal + 1));
 
@@ -139,9 +72,7 @@ export default function RoadmapChart({ userData, analysis }: RoadmapChartProps) 
               tickFormatter={(v) => `${v}%`}
             />
             <Tooltip
-              formatter={(value) =>
-                value == null ? '' : `${Number(value).toFixed(1)}%`
-              }
+              formatter={(value) => (value == null ? '' : `${Number(value).toFixed(1)}%`)}
               labelFormatter={(label) => `Week ${label}`}
               contentStyle={{
                 borderRadius: 12,
@@ -157,27 +88,22 @@ export default function RoadmapChart({ userData, analysis }: RoadmapChartProps) 
               dot={false}
               isAnimationActive={false}
             />
-            {lastPoint && (
-         <ReferenceDot
-  x={lastPoint.week}
-  y={lastPoint.userLossPct}
-  r={4}
-  fill="#22c55e"
-  stroke="none"
-/>
-
+            {last && (
+              <ReferenceDot
+                x={last.week}
+                y={last.userLossPct}
+                r={4}
+                fill="#22c55e"
+                stroke="none"
+              />
             )}
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       <div style={styles.footer}>
-        <div style={styles.footerItem}>
-          마지막 값: {Number(lastPoint.userLossPct).toFixed(1)}%
-        </div>
-        <div style={styles.footerItem}>
-          주차: {lastPoint.week}
-        </div>
+        <div style={styles.footerItem}>마지막 값: {Number(last.userLossPct).toFixed(1)}%</div>
+        <div style={styles.footerItem}>주차: {last.week}</div>
       </div>
     </div>
   );
@@ -210,7 +136,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   chartWrap: {
     width: '100%',
-    height: 280, // Tailwind가 깨져도 차트가 무조건 보이도록 고정
+    height: 280,
     minHeight: 280,
   },
   footer: {
