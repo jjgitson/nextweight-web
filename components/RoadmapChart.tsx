@@ -24,8 +24,6 @@ export default function RoadmapChart({ userData, analysis }: RoadmapChartProps) 
       week,
       mounjaro: getVal(CLINICAL_DATA.MOUNJARO, week, "15mg"),
       wegovy: getVal(CLINICAL_DATA.WEGOVY, week),
-      // 현재 주차까지만 사용자 실선 표시
-      user: week === userData.currentWeek ? analysis.userLossPct : null
     };
   });
 
@@ -38,11 +36,10 @@ export default function RoadmapChart({ userData, analysis }: RoadmapChartProps) 
           <YAxis tick={{fontSize: 10}} unit="%" domain={[-25, 5]} />
           <Tooltip 
             contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-            // ✅ TypeScript 에러 수정: undefined 방어 코드 적용
             formatter={(value: any) => [`${value}%`, '감량률']}
           />
           
-          {/* 🌊 4-Stage 스테이지 레이어 오버레이 */}
+          {/* 🌊 요구사항: 4-Stage 스테이지 레이어 오버레이 */}
           {STAGES.map(s => (
             <ReferenceArea key={s.id} x1={s.start} x2={s.end} fill={s.color} fillOpacity={0.04}>
               <Label value={`${s.icon} ${s.name}`} position="insideTop" fill={s.color} fontSize={9} fontWeight="bold" />
@@ -50,8 +47,8 @@ export default function RoadmapChart({ userData, analysis }: RoadmapChartProps) 
           ))}
 
           {/* 임상 기준 곡선 (점선) */}
-          <Line type="monotone" dataKey="mounjaro" stroke="#94a3b8" strokeDasharray="5 5" dot={false} name="터제타파이드(15mg) 평균" />
-          <Line type="monotone" dataKey="wegovy" stroke="#cbd5e1" strokeDasharray="5 5" dot={false} name="위고비(2.4mg) 평균" />
+          <Line type="monotone" dataKey="mounjaro" stroke="#94a3b8" strokeDasharray="5 5" dot={false} name="터제타파이드 평균" />
+          <Line type="monotone" dataKey="wegovy" stroke="#cbd5e1" strokeDasharray="5 5" dot={false} name="위고비 평균" />
           
           {/* 현재 위치 마커 */}
           <ReferenceDot 
