@@ -28,9 +28,9 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
             <option value="여성">여성</option><option value="남성">남성</option>
           </select>
         </div>
-        <div><label className={labelClass}>13. 가장 큰 고민</label>
-          <select className={inputClass} value={formData.mainConcern} onChange={e => setFormData({...formData, mainConcern: e.target.value})}>
-            <option value="요요">요요 방지</option><option value="근감소">근력 감소</option><option value="비용">비용 효율</option><option value="부작용">부작용 관리</option>
+        <div><label className={labelClass}>11. 주간 운동</label>
+          <select className={inputClass} value={formData.exercise} onChange={e => setFormData({...formData, exercise: e.target.value})}>
+            <option value="안 함">안 함</option><option value="1-2회">주 1~2회</option><option value="3-4회">주 3~4회</option><option value="5회+">주 5회 이상</option>
           </select>
         </div>
       </div>
@@ -42,7 +42,7 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
 
       <div className="p-8 bg-slate-50 rounded-[40px] space-y-6">
         <label className={labelClass}>6~7. 투약 정보</label>
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2">
           {['사용 전', '사용 중'].map(s => (
             <button key={s} type="button" onClick={() => setFormData({...formData, drugStatus: s})} className={`flex-1 p-4 rounded-2xl font-black ${formData.drugStatus === s ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400'}`}>{s}</button>
           ))}
@@ -53,26 +53,21 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
 
         {formData.drugStatus === '사용 중' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 animate-in fade-in slide-in-from-top-2">
-            <div><label className={labelClass}>투약 시작 전 체중 (kg)</label><input type="number" className={inputClass} value={formData.startWeightBeforeDrug} onChange={e => setFormData({...formData, startWeightBeforeDrug: Number(e.target.value)})} /></div>
+            <div><label className={labelClass}>시작 전 체중 (kg)</label><input type="number" className={inputClass} value={formData.startWeightBeforeDrug} onChange={e => setFormData({...formData, startWeightBeforeDrug: Number(e.target.value)})} /></div>
             <div><label className={labelClass}>현재 투약 주차</label><input type="number" className={inputClass} value={formData.currentWeek} onChange={e => setFormData({...formData, currentWeek: Number(e.target.value)})} /></div>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div><label className={labelClass}>10. 골격근량</label>
-          <select className={inputClass} value={formData.muscleMass} onChange={e => setFormData({...formData, muscleMass: e.target.value})}>
-            <option value="모름">모름</option><option value="이하">이하</option><option value="표준">표준</option><option value="이상">이상</option>
-          </select>
-        </div>
-        <div><label className={labelClass}>11. 운동 횟수</label>
-          <select className={inputClass} value={formData.exercise} onChange={e => setFormData({...formData, exercise: e.target.value})}>
-            <option value="안 함">안 함</option><option value="1-2회">주 1-2회</option><option value="3-4회">주 3-4회</option><option value="5회+">주 5회 이상</option>
-          </select>
-        </div>
+      <div className="grid grid-cols-2 gap-6">
         <div><label className={labelClass}>12. 관리 예산</label>
           <select className={inputClass} value={formData.budget} onChange={e => setFormData({...formData, budget: e.target.value})}>
-            <option value="실속형">실속형</option><option value="표준형">표준형</option><option value="집중형">집중형</option>
+            {['실속형', '표준형', '집중형'].map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
+        <div><label className={labelClass}>13. 가장 큰 고민</label>
+          <select className={inputClass} value={formData.mainConcern} onChange={e => setFormData({...formData, mainConcern: e.target.value})}>
+            {['요요', '근감소', '비용', '부작용'].map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
       </div>
