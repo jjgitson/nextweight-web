@@ -1,22 +1,30 @@
 // /lib/roadmap-engine.ts
 import { CLINICAL_DATA, STAGES, DRUG_TYPES } from './drug-config';
 
-// ⚠️ 14개 온보딩 문항 필드를 모두 포함하도록 인터페이스 확장
+// ⚠️ 온보딩의 모든 필드를 포함하도록 인터페이스 확장 (빌드 에러 해결 포인트)
 export interface UserData {
-  userName: string; userAge: number; userGender: string;
-  currentWeight: number; targetWeight: number; startWeightBeforeDrug: number;
-  drugStatus: string; drugType: keyof typeof DRUG_TYPES;
-  currentDose: number; currentWeek: number;
-  muscleMass: string; exercise: string; budget: string;
-  mainConcern: string; resolution: string;
+  userName: string;
+  userAge: number;
+  userGender: string;
+  currentWeight: number;
+  targetWeight: number;
+  startWeightBeforeDrug: number;
+  drugType: keyof typeof DRUG_TYPES;
+  currentDose: number;
+  currentWeek: number;
+  drugStatus: string;
+  budget: string;
+  muscleMass: string;
+  exercise: string;
+  mainConcern: string;
+  resolution: string;
 }
 
-// 빌드 에러 해결: 함수명을 generatePersonalizedAnalysis로 확정
 export function generatePersonalizedAnalysis(userData: UserData) {
   const startWeight = userData.startWeightBeforeDrug || userData.currentWeight || 1;
   const userLossPct = ((userData.currentWeight - startWeight) / startWeight) * 100;
   
-  // 현재 스테이지 판별 (소수점 주차 대응)
+  // 현재 스테이지 판별
   const currentStage = STAGES.find(s => userData.currentWeek >= s.start && userData.currentWeek <= s.end) || STAGES[STAGES.length - 1];
 
   let clinicalVal = 0;
