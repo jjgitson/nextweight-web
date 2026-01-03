@@ -32,10 +32,10 @@ function ResultsContent() {
       <div className="max-w-4xl mx-auto space-y-8">
         <header className="text-center py-6">
           <h1 className="text-4xl font-black italic text-slate-900 tracking-tighter">Next Weight Lab</h1>
-          <p className="text-slate-500 font-bold">4-Stage Metabolic Bridge Tracking</p>
+          <p className="text-slate-500 font-bold tracking-tight">4-Stage Metabolic Bridge Tracking</p>
         </header>
 
-        {/* 📊 요구사항: 현재 위치 및 비교 분석 메시지 */}
+        {/* 📊 요구사항: 현재 위치 및 비교 메시지 */}
         <div className="bg-blue-600 text-white p-10 rounded-[40px] shadow-lg">
           <p className="text-xl font-bold mb-2">현재 {userData.userName}님은 {analysis.currentStage.name} ({analysis.currentStage.start}–{analysis.currentStage.end}주) 단계에 있습니다.</p>
           <p className="text-lg opacity-90">{analysis.comparisonMsg}</p>
@@ -55,7 +55,7 @@ function ResultsContent() {
           ))}
         </div>
 
-        {/* 📈 요구사항: 개인화 체중 추적 차트 */}
+        {/* 📈 개인화 차트 섹션 */}
         <div className="bg-white p-10 rounded-[50px] shadow-sm border border-slate-100">
           <h2 className="text-2xl font-black mb-8 italic">Weight Path Simulation (%)</h2>
           <RoadmapChart userData={userData} analysis={analysis} />
