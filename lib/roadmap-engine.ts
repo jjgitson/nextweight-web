@@ -1,20 +1,27 @@
 // /lib/roadmap-engine.ts
 import { CLINICAL_DATA, STAGES, DRUG_TYPES } from './drug-config';
 
+// ⚠️ 14개 온보딩 문항 필드를 모두 포함하도록 인터페이스 확장
 export interface UserData {
-  userName: string; currentWeight: number; startWeightBeforeDrug: number;
-  drugType: keyof typeof DRUG_TYPES; currentDose: number; currentWeek: number;
-  drugStatus: string; budget: string; muscleMass: string; exercise: string;
+  userName: string; userAge: number; userGender: string;
+  currentWeight: number; targetWeight: number; startWeightBeforeDrug: number;
+  drugStatus: string; drugType: keyof typeof DRUG_TYPES;
+  currentDose: number; currentWeek: number;
+  muscleMass: string; exercise: string; budget: string;
+  mainConcern: string; resolution: string;
 }
 
-// 빌드 에러 해결: 함수명을 generatePersonalizedAnalysis로 수정
+// 빌드 에러 해결: 함수명을 generatePersonalizedAnalysis로 확정
 export function generatePersonalizedAnalysis(userData: UserData) {
   const startWeight = userData.startWeightBeforeDrug || userData.currentWeight || 1;
   const userLossPct = ((userData.currentWeight - startWeight) / startWeight) * 100;
+  
+  // 현재 스테이지 판별 (소수점 주차 대응)
   const currentStage = STAGES.find(s => userData.currentWeek >= s.start && userData.currentWeek <= s.end) || STAGES[STAGES.length - 1];
 
   let clinicalVal = 0;
   const drugConfig = DRUG_TYPES[userData.drugType];
+  
   if (userData.drugType === 'MOUNJARO') {
     const data = CLINICAL_DATA.MOUNJARO;
     const idx = data.weeks.findIndex(w => w >= userData.currentWeek);
@@ -30,7 +37,6 @@ export function generatePersonalizedAnalysis(userData: UserData) {
   return {
     userLossPct: Number(userLossPct.toFixed(1)),
     currentStage,
-    // Phase 2-A: Status Card
     statusCard: {
       stageName: currentStage.name,
       weekText: `${userData.currentWeek}주차`,
@@ -38,7 +44,6 @@ export function generatePersonalizedAnalysis(userData: UserData) {
       budget: userData.budget,
       comparison: `동일 주차 기준, ${drugConfig.name} 평균 대비 ${Math.abs(Number(diffPct))}%p ${Number(diffPct) <= 0 ? '아래' : '위'}`
     },
-    // Phase 2-B: GPS Row
     gps: [
       { label: 'G Drug', value: `${drugConfig.name} ${userData.currentDose}mg`, status: 'normal' },
       { label: 'P Protein', value: userData.muscleMass, status: userData.muscleMass === '이하' ? 'attention' : 'normal' },
