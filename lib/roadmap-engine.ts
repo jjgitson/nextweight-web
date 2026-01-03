@@ -10,13 +10,7 @@ export interface UserData {
   mainConcern: string; resolution: string;
 }
 
-export interface RoadmapStep {
-  week: number; phase: string; name: string; icon: string; 
-  color: string; start: number; end: number; msg: string; weightPct: number;
-}
-
 export function generatePersonalizedAnalysis(userData: UserData) {
-  // 데이터 가딩: 시작 체중이 0일 경우 현재 체중으로 대체하여 NaN 방지
   const startWeight = userData.startWeightBeforeDrug || userData.currentWeight || 1;
   const userLossPct = ((userData.currentWeight - startWeight) / startWeight) * 100;
   
@@ -24,28 +18,23 @@ export function generatePersonalizedAnalysis(userData: UserData) {
 
   let clinicalVal = 0;
   const isMounjaro = userData.drugType === 'MOUNJARO';
+  const drugRef = isMounjaro ? CLINICAL_DATA.MOUNJARO : CLINICAL_DATA.WEGOVY;
   
+  const idx = drugRef.weeks.findIndex(w => w >= userData.currentWeek);
   if (isMounjaro) {
-    const data = CLINICAL_DATA.MOUNJARO;
-    const idx = data.weeks.findIndex(w => w >= userData.currentWeek);
-    const doseKey = `${userData.currentDose}mg` as keyof typeof data.dose;
-    clinicalVal = (data.dose[doseKey] || data.dose["15mg"])[idx === -1 ? data.weeks.length - 1 : idx];
+    const doseKey = `${userData.currentDose}mg` as keyof typeof CLINICAL_DATA.MOUNJARO.dose;
+    clinicalVal = (CLINICAL_DATA.MOUNJARO.dose[doseKey] || CLINICAL_DATA.MOUNJARO.dose["15mg"])[idx === -1 ? 10 : idx];
   } else {
-    const data = CLINICAL_DATA.WEGOVY;
-    const idx = data.weeks.findIndex(w => w >= userData.currentWeek);
-    clinicalVal = data.values[idx === -1 ? data.weeks.length - 1 : idx];
+    clinicalVal = CLINICAL_DATA.WEGOVY.values[idx === -1 ? 11 : idx];
   }
 
   const diffPct = (userLossPct - clinicalVal).toFixed(1);
 
   return {
-    userLossPct: isNaN(userLossPct) ? 0 : Number(userLossPct.toFixed(1)),
+    userLossPct: Number(userLossPct.toFixed(1)),
     currentStage,
-    comparisonMsg: `동일 주차 기준, ${isMounjaro ? '터제타파이드' : '위고비'} 평균 대비 ${Math.abs(Number(diffPct))}%p ${Number(diffPct) <= 0 ? '추가 감량 중' : '위'}에 있습니다.`,
-    roadmap: STAGES.map(s => ({ 
-      ...s, 
-      week: s.start, 
-      weightPct: 0 // 차트 내부 로직에서 보간됨
-    })) as RoadmapStep[]
+    // 요구사항: 컴팩트한 비교 문구
+    comparisonMsg: `동일 주차 기준, ${drugRef.name} 평균 대비 ${Math.abs(Number(diffPct))}%p ${Number(diffPct) <= 0 ? '아래' : '위'}에 있습니다.`,
+    actionSentence: currentStage.msg
   };
 }
