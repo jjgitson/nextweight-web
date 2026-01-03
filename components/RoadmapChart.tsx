@@ -1,39 +1,58 @@
 // /components/RoadmapChart.tsx
 "use client";
 import { 
-  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, ReferenceDot 
+  ComposedChart, Line, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, ReferenceDot, ReferenceArea, Label
 } from 'recharts';
+import { STAGES, CLINICAL_DATA } from '../lib/drug-config';
 
-interface RoadmapChartProps {
-  data: any[];
-  userData: any;
-}
+export default function RoadmapChart({ userData, analysis }: { userData: any, analysis: any }) {
+  // 차트 시각화용 데이터 구성 (0~72주)
+  const chartData = Array.from({ length: 73 }, (_, week) => {
+    const getVal = (drug: any, w: number, dose?: string) => {
+      const idx = drug.weeks.findIndex((dw: number) => dw >= w);
+      const vals = dose ? drug.dose[dose] || drug.dose["15mg"] : drug.values;
+      return vals[idx === -1 ? vals.length - 1 : idx];
+    };
 
-export default function RoadmapChart({ data, userData }: RoadmapChartProps) {
+    return {
+      week,
+      mounjaro: getVal(CLINICAL_DATA.MOUNJARO, week, "15mg"),
+      wegovy: getVal(CLINICAL_DATA.WEGOVY, week),
+      user: week <= userData.currentWeek ? analysis.userLossPct : null
+    };
+  });
+
   return (
-    <div className="w-full h-[350px]">
+    <div className="w-full h-[400px] mt-6">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={data}>
+        <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-          <XAxis dataKey="week" tick={{fontSize: 12}} axisLine={false} tickLine={false} unit="주" />
-          <YAxis hide domain={['dataMin - 10', 'dataMax + 10']} />
-          <Tooltip 
-            contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-            labelFormatter={(label) => `D+${label}주`}
-          />
-          <Area type="monotone" dataKey="weight" fill="#EEF2FF" stroke="#C7D2FE" name="임상 평균 궤도" />
-          <Line type="monotone" dataKey="weight" stroke="#4F46E5" strokeWidth={3} dot={{ r: 4, fill: '#4F46E5' }} name="예상 체중(kg)" />
+          <XAxis dataKey="week" type="number" domain={[0, 72]} tick={{fontSize: 10}} />
+          <YAxis tick={{fontSize: 10}} unit="%" />
+          <Tooltip />
           
-          {/* 현재 사용자의 위치(주차 및 체중) 마킹 */}
-          {userData.drugStatus === '사용 중' && (
-            <ReferenceDot 
-              x={userData.currentWeek} 
-              y={userData.currentWeight} 
-              r={8} fill="#EF4444" stroke="white" strokeWidth={3}
-              label={{ position: 'top', value: '나의 위치', fill: '#EF4444', fontSize: 12, fontWeight: 'bold' }} 
-            />
-          )}
+          {/* 4-Stage 레이어 오버레이 */}
+          {STAGES.map(s => (
+            <ReferenceArea key={s.id} x1={s.start} x2={s.end} fill={s.color} fillOpacity={0.05}>
+              <Label value={`${s.icon} ${s.name}`} position="insideTop" fill={s.color} fontSize={10} fontWeight="bold" />
+            </ReferenceArea>
+          ))}
+
+          {/* 임상 기준 곡선 (점선) */}
+          <Line type="monotone" dataKey="mounjaro" stroke="#94a3b8" strokeDasharray="5 5" dot={false} name="터제타파이드 평균" />
+          <Line type="monotone" dataKey="wegovy" stroke="#cbd5e1" strokeDasharray="5 5" dot={false} name="위고비 평균" />
+          
+          {/* 사용자 곡선 (실선) */}
+          <Line type="monotone" dataKey="user" stroke="#2563EB" strokeWidth={3} dot={false} name="나의 변화" />
+
+          {/* 현재 위치 마커 */}
+          <ReferenceDot 
+            x={userData.currentWeek} 
+            y={Number(analysis.userLossPct)} 
+            r={6} fill="#2563EB" stroke="#fff" strokeWidth={2}
+            label={{ position: 'top', value: analysis.currentStage.name, fill: '#2563EB', fontSize: 12, fontWeight: 'bold' }} 
+          />
         </ComposedChart>
       </ResponsiveContainer>
     </div>
