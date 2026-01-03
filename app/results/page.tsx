@@ -35,11 +35,13 @@ function ResultsContent() {
           <p className="text-slate-500 font-bold tracking-tight">4-Stage Metabolic Bridge Tracking</p>
         </header>
 
+        {/* 📊 현재 위치 및 분석 메시지 */}
         <div className="bg-blue-600 text-white p-10 rounded-[40px] shadow-lg">
           <p className="text-xl font-bold mb-2">현재 {userData.userName}님은 {analysis.currentStage.name} ({analysis.currentStage.start}–{analysis.currentStage.end}주) 단계에 있습니다.</p>
           <p className="text-lg opacity-90">{analysis.comparisonMsg}</p>
         </div>
 
+        {/* 🌉 4-Stage 정보 디자인 타임라인 */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {analysis.roadmap.map((step: RoadmapStep, i: number) => (
             <div key={i} className="relative p-6 rounded-3xl border border-slate-100 bg-white" style={{borderTop: `6px solid ${step.color}`}}>
@@ -53,11 +55,13 @@ function ResultsContent() {
           ))}
         </div>
 
+        {/* 📈 개인화 차트 섹션 */}
         <div className="bg-white p-10 rounded-[50px] shadow-sm border border-slate-100">
           <h2 className="text-2xl font-black mb-8 italic">Weight Path Simulation (%)</h2>
           <RoadmapChart userData={userData} analysis={analysis} />
         </div>
 
+        {/* 🛡️ 요구사항: 비의료 안전 문구 고정 */}
         <footer className="mt-20 pt-10 border-t border-slate-200 text-center">
           <p className="text-slate-400 text-[10px] leading-relaxed max-w-lg mx-auto">
             본 차트는 임상 연구 평균값과 개인 기록을 비교해 보여주는 자기관리용 정보 도구입니다. 
@@ -71,7 +75,7 @@ function ResultsContent() {
 
 export default function ResultsPage() {
   return (
-    <Suspense fallback={<div className="p-20 text-center font-bold">분석 중...</div>}>
+    <Suspense fallback={<div className="p-20 text-center font-bold text-slate-400 font-mono">CALCULATING METABOLIC BRIDGE...</div>}>
       <ResultsContent />
     </Suspense>
   );
