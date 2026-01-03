@@ -1,10 +1,46 @@
 // /lib/drug-config.ts
 
 export const STAGES = [
-  { phase: 'adaptation', name: '적응기', icon: '💧', start: 0, end: 4, color: '#3B82F6', msg: "몸이 변화를 받아들이는 중입니다. 수분 2L로 부작용을 관리하세요." },
-  { phase: 'loss', name: '감량기', icon: '🔥', start: 4, end: 16, color: '#10B981', msg: "체지방 연소 피크 구간입니다. 단백질 100g 섭취로 근육을 사수하세요." },
-  { phase: 'bridge', name: '가교기', icon: '🌉', start: 16, end: 36, color: '#F59E0B', msg: "대사 전환 엔진이 가동됩니다. 저항성 운동이 요요를 결정합니다." },
-  { phase: 'maintenance', name: '유지기', icon: '🛡️', start: 36, end: 72, color: '#8B5CF6', msg: "건강한 대사 체계가 안착되었습니다. 요요 방어선을 완성하세요." }
+  { 
+    phase: 'adaptation', 
+    name: '적응기', 
+    icon: '💧', 
+    start: 0, 
+    end: 4, 
+    color: '#3B82F6', 
+    msg: "많은 분들이 수분 2L 섭취가 몸의 변화를 받아들이는 데 도움이 된다고 이야기합니다.",
+    actionTooltip: "수분 섭취와 가벼운 산책이 몸의 적응을 돕는다고 느껴지는 시기입니다."
+  },
+  { 
+    phase: 'loss', 
+    name: '감량기', 
+    icon: '🔥', 
+    start: 4, 
+    end: 16, 
+    color: '#10B981', 
+    msg: "많은 사람들이 이 시점에서 근손실 관리가 중요하다고 느낍니다.",
+    actionTooltip: "단백질 위주의 식단이 체지방 연소 효율을 높이는 데 효과적이라고 알려져 있습니다."
+  },
+  { 
+    phase: 'bridge', 
+    name: '가교기', 
+    icon: '🌉', 
+    start: 16, 
+    end: 36, 
+    color: '#F59E0B', 
+    msg: "이 단계에서는 저항성 운동이 향후 요요 방지의 핵심이라는 점에 많은 분들이 공감합니다.",
+    actionTooltip: "근육은 스스로 에너지를 태우는 엔진이 되어 약물 없이도 유지를 돕는다고 합니다."
+  },
+  { 
+    phase: 'maintenance', 
+    name: '유지기', 
+    icon: '🛡️', 
+    start: 36, 
+    end: 72, 
+    color: '#8B5CF6', 
+    msg: "스스로 에너지를 태우는 건강한 대사 체계가 안착되었다고 확신하게 되는 시점입니다.",
+    actionTooltip: "이제는 약물에 의존하지 않고도 자신의 루틴으로 체중을 방어할 수 있는 시기입니다."
+  }
 ];
 
 export const CLINICAL_DATA = {
