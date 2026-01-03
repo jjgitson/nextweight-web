@@ -13,20 +13,18 @@ type UserData = {
   userName: string;
   userAge: number;
   userGender: '남성' | '여성';
+
   currentWeight: number;
   targetWeight: number;
 
   drugStatus: '사용 전' | '사용 중';
   drugType: DrugTypeKey;
 
-  // 시작 체중(투약 전)
   startWeightBeforeDrug: number;
 
-  // 용량/주차
   currentDose: number;
   currentWeek: number;
 
-  // 정확도 위한 시작일(저장용)
   startDate?: string;
 
   muscleMass: MuscleMassTier;
@@ -37,15 +35,12 @@ type UserData = {
 };
 
 const DOSE_OPTIONS: Record<DrugTypeKey, number[]> = {
-  // 마운자로(터제타파이드)
   MOUNJARO: [0, 2.5, 5, 7.5, 10, 12.5, 15],
-  // 위고비(세마글루타이드)
   WEGOVY: [0, 0.25, 0.5, 1.0, 1.7, 2.4],
 };
 
-function formatDoseLabel(drugType: DrugTypeKey, dose: number) {
+function formatDoseLabel(dose: number) {
   if (dose === 0) return '0 (시작 전)';
-  // 보기 좋게 소수점 제거
   const str = Number.isInteger(dose) ? String(dose) : String(dose);
   return `${str} mg`;
 }
@@ -75,6 +70,10 @@ export default function HomePage() {
   const [userAge, setUserAge] = useState<number>(35);
   const [userGender, setUserGender] = useState<'남성' | '여성'>('여성');
 
+  const [exercise, setExercise] = useState<ExerciseTier>('안 함');
+  const [muscleMass, setMuscleMass] = useState<MuscleMassTier>('표준');
+  const [budget, setBudget] = useState<BudgetTier>('표준형');
+
   const [currentWeight, setCurrentWeight] = useState<number>(80);
   const [targetWeight, setTargetWeight] = useState<number>(65);
 
@@ -92,42 +91,33 @@ export default function HomePage() {
   const computedWeek = useMemo(() => calcWeekFromStartDate(startDate), [startDate]);
   const [currentWeek, setCurrentWeek] = useState<number>(1);
 
-  const [muscleMass, setMuscleMass] = useState<MuscleMassTier>('표준');
-  const [exercise, setExercise] = useState<ExerciseTier>('안 함');
-  const [budget, setBudget] = useState<BudgetTier>('표준형');
   const [mainConcern, setMainConcern] = useState<MainConcern>('요요');
   const [resolution, setResolution] = useState<string>('');
 
-  // 시작일 바뀌면 자동 주차 업데이트
   useEffect(() => {
     if (weekMode === 'auto') setCurrentWeek(computedWeek);
   }, [computedWeek, weekMode]);
 
-  // 약물 변경 시 용량 옵션 자동 보정
   useEffect(() => {
-    // 현재 용량이 옵션에 없으면 0으로
     if (!doseOptions.includes(currentDose)) setCurrentDose(0);
   }, [drugType, doseOptions, currentDose]);
 
-  // 사용 전이면 용량 0, 주차 1로 기본화
   useEffect(() => {
     if (drugStatus === '사용 전') {
       setCurrentDose(0);
       setWeekMode('manual');
       setCurrentWeek(1);
     } else {
-      // 사용 중으로 바뀌면 다시 자동 모드 권장
       setWeekMode('auto');
     }
   }, [drugStatus]);
-
-  const ui = styles;
 
   function handleSubmit() {
     const payload: UserData = {
       userName: userName.trim(),
       userAge: Number(userAge),
       userGender,
+
       currentWeight: Number(currentWeight),
       targetWeight: Number(targetWeight),
 
@@ -144,6 +134,7 @@ export default function HomePage() {
       muscleMass,
       exercise,
       budget,
+
       mainConcern,
       resolution: resolution.trim(),
     };
@@ -151,6 +142,8 @@ export default function HomePage() {
     localStorage.setItem('userData', JSON.stringify(payload));
     router.push('/results');
   }
+
+  const ui = styles;
 
   return (
     <div style={ui.page}>
@@ -165,176 +158,182 @@ export default function HomePage() {
         </div>
 
         <div style={ui.card}>
-          <div style={ui.grid}>
-            <Field label="성함">
-              <input style={ui.input} value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="예: 홍길동" />
-            </Field>
+          <Section title="기본 정보">
+            <div style={ui.grid}>
+              <Field label="성함">
+                <input style={ui.input} value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="예: 홍길동" />
+              </Field>
 
-            <Field label="나이">
-              <input style={ui.input} type="number" value={userAge} onChange={(e) => setUserAge(Number(e.target.value))} min={19} max={99} />
-            </Field>
+              <Field label="나이">
+                <input style={ui.input} type="number" value={userAge} onChange={(e) => setUserAge(Number(e.target.value))} min={19} max={99} />
+              </Field>
 
-            <Field label="성별">
-              <select style={ui.select} value={userGender} onChange={(e) => setUserGender(e.target.value as any)}>
-                <option value="남성">남성</option>
-                <option value="여성">여성</option>
-              </select>
-            </Field>
+              <Field label="성별">
+                <select style={ui.select} value={userGender} onChange={(e) => setUserGender(e.target.value as any)}>
+                  <option value="남성">남성</option>
+                  <option value="여성">여성</option>
+                </select>
+              </Field>
 
-            <Field label="주간 운동 횟수">
-              <select style={ui.select} value={exercise} onChange={(e) => setExercise(e.target.value as any)}>
-                <option value="안 함">안 함</option>
-                <option value="1-2회">1-2회</option>
-                <option value="3-4회">3-4회</option>
-                <option value="5회+">5회+</option>
-              </select>
-            </Field>
+              <Field label="주간 운동 빈도">
+                <select style={ui.select} value={exercise} onChange={(e) => setExercise(e.target.value as any)}>
+                  <option value="안 함">안 함</option>
+                  <option value="1-2회">1-2회</option>
+                  <option value="3-4회">3-4회</option>
+                  <option value="5회+">5회+</option>
+                </select>
+              </Field>
 
-            <Field label="현재 체중 (kg)">
-              <input style={ui.input} type="number" value={currentWeight} onChange={(e) => setCurrentWeight(Number(e.target.value))} min={1} step="0.1" />
-            </Field>
+              <Field label="골격근량">
+                <select style={ui.select} value={muscleMass} onChange={(e) => setMuscleMass(e.target.value as any)}>
+                  <option value="모름">모름</option>
+                  <option value="이하">이하</option>
+                  <option value="표준">표준</option>
+                  <option value="이상">이상</option>
+                </select>
+              </Field>
 
-            <Field label="목표 체중 (kg)">
-              <input style={ui.input} type="number" value={targetWeight} onChange={(e) => setTargetWeight(Number(e.target.value))} min={1} step="0.1" />
-            </Field>
+              <Field label="다이어트 관리 예산">
+                <select style={ui.select} value={budget} onChange={(e) => setBudget(e.target.value as any)}>
+                  <option value="실속형">실속형</option>
+                  <option value="표준형">표준형</option>
+                  <option value="집중형">집중형</option>
+                </select>
+              </Field>
+            </div>
+          </Section>
 
-            <Field label="투약 상태">
-              <div style={ui.segment}>
-                <button
-                  type="button"
-                  style={{ ...ui.segmentBtn, ...(drugStatus === '사용 전' ? ui.segmentActive : {}) }}
-                  onClick={() => setDrugStatus('사용 전')}
-                >
-                  사용 전
-                </button>
-                <button
-                  type="button"
-                  style={{ ...ui.segmentBtn, ...(drugStatus === '사용 중' ? ui.segmentActive : {}) }}
-                  onClick={() => setDrugStatus('사용 중')}
-                >
-                  사용 중
-                </button>
-              </div>
-            </Field>
+          <Section title="체중 목표">
+            <div style={ui.grid}>
+              <Field label="현재 체중 (kg)">
+                <input style={ui.input} type="number" value={currentWeight} onChange={(e) => setCurrentWeight(Number(e.target.value))} min={1} step="0.1" />
+              </Field>
 
-            <Field label="약물 선택">
-              <select style={ui.select} value={drugType} onChange={(e) => setDrugType(e.target.value as any)}>
-                <option value="MOUNJARO">마운자로</option>
-                <option value="WEGOVY">위고비</option>
-              </select>
-            </Field>
+              <Field label="목표 체중 (kg)">
+                <input style={ui.input} type="number" value={targetWeight} onChange={(e) => setTargetWeight(Number(e.target.value))} min={1} step="0.1" />
+              </Field>
+            </div>
+          </Section>
 
-            <Field label="투약 전 시작 체중 (kg)">
-              <input
-                style={ui.input}
-                type="number"
-                value={startWeightBeforeDrug}
-                onChange={(e) => setStartWeightBeforeDrug(Number(e.target.value))}
-                min={1}
-                step="0.1"
-              />
-            </Field>
-
-            <Field label="현재 용량">
-              <select style={ui.select} value={currentDose} onChange={(e) => setCurrentDose(Number(e.target.value))}>
-                {doseOptions.map((d) => (
-                  <option key={String(d)} value={d}>
-                    {formatDoseLabel(drugType, d)}
-                  </option>
-                ))}
-              </select>
-              <div style={ui.help}>
-                약물(위고비/마운자로) 기준으로 용량 단계를 선택하세요.
-              </div>
-            </Field>
-
-            <Field label="투약 시작일">
-              <input
-                style={ui.input}
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                disabled={drugStatus === '사용 전'}
-              />
-              <div style={ui.help}>
-                시작일 기준으로 현재 주차를 자동 계산합니다.
-              </div>
-            </Field>
-
-            <Field label="현재 주차">
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                <input
-                  style={{ ...ui.input, width: 140 }}
-                  type="number"
-                  value={currentWeek}
-                  onChange={(e) => setCurrentWeek(Number(e.target.value))}
-                  min={1}
-                  disabled={weekMode === 'auto' && drugStatus === '사용 중'}
-                />
-                {drugStatus === '사용 중' && (
-                  <div style={ui.segmentSmall}>
-                    <button
-                      type="button"
-                      style={{ ...ui.segmentBtnSmall, ...(weekMode === 'auto' ? ui.segmentActiveSmall : {}) }}
-                      onClick={() => {
-                        setWeekMode('auto');
-                        setCurrentWeek(computedWeek);
-                      }}
-                    >
-                      자동
-                    </button>
-                    <button
-                      type="button"
-                      style={{ ...ui.segmentBtnSmall, ...(weekMode === 'manual' ? ui.segmentActiveSmall : {}) }}
-                      onClick={() => setWeekMode('manual')}
-                    >
-                      수동
-                    </button>
-                  </div>
-                )}
-              </div>
-              {drugStatus === '사용 중' && (
-                <div style={ui.help}>
-                  자동 계산값: {computedWeek}주차 (필요하면 수동으로 보정하세요)
+          <Section title="투약 정보">
+            <div style={ui.grid}>
+              <Field label="투약 상태">
+                <div style={ui.segment}>
+                  <button
+                    type="button"
+                    style={{ ...ui.segmentBtn, ...(drugStatus === '사용 전' ? ui.segmentActive : {}) }}
+                    onClick={() => setDrugStatus('사용 전')}
+                  >
+                    사용 전
+                  </button>
+                  <button
+                    type="button"
+                    style={{ ...ui.segmentBtn, ...(drugStatus === '사용 중' ? ui.segmentActive : {}) }}
+                    onClick={() => setDrugStatus('사용 중')}
+                  >
+                    사용 중
+                  </button>
                 </div>
-              )}
-            </Field>
+              </Field>
 
-            <Field label="골격근량">
-              <select style={ui.select} value={muscleMass} onChange={(e) => setMuscleMass(e.target.value as any)}>
-                <option value="모름">모름</option>
-                <option value="이하">이하</option>
-                <option value="표준">표준</option>
-                <option value="이상">이상</option>
-              </select>
-            </Field>
+              <Field label="약물 선택">
+                <select style={ui.select} value={drugType} onChange={(e) => setDrugType(e.target.value as any)}>
+                  <option value="MOUNJARO">마운자로</option>
+                  <option value="WEGOVY">위고비</option>
+                </select>
+              </Field>
 
-            <Field label="관리 예산">
-              <select style={ui.select} value={budget} onChange={(e) => setBudget(e.target.value as any)}>
-                <option value="실속형">실속형</option>
-                <option value="표준형">표준형</option>
-                <option value="집중형">집중형</option>
-              </select>
-            </Field>
+              <Field label="투약 전 시작 체중 (kg)">
+                <input
+                  style={ui.input}
+                  type="number"
+                  value={startWeightBeforeDrug}
+                  onChange={(e) => setStartWeightBeforeDrug(Number(e.target.value))}
+                  min={1}
+                  step="0.1"
+                />
+              </Field>
 
-            <Field label="가장 큰 고민">
-              <select style={ui.select} value={mainConcern} onChange={(e) => setMainConcern(e.target.value as any)}>
-                <option value="요요">요요</option>
-                <option value="근감소">근감소</option>
-                <option value="비용">비용</option>
-                <option value="부작용">부작용</option>
-              </select>
-            </Field>
+              <Field label="현재 투약 용량">
+                <select style={ui.select} value={currentDose} onChange={(e) => setCurrentDose(Number(e.target.value))}>
+                  {doseOptions.map((d) => (
+                    <option key={String(d)} value={d}>
+                      {formatDoseLabel(d)}
+                    </option>
+                  ))}
+                </select>
+                <div style={ui.help}>약물 기준으로 용량 단계를 선택하세요.</div>
+              </Field>
 
-            <Field label="다이어트 각오">
-              <textarea
-                style={ui.textarea}
-                value={resolution}
-                onChange={(e) => setResolution(e.target.value)}
-                placeholder="예: 이번에는 기필코..."
-              />
-            </Field>
-          </div>
+              <Field label="투약 시작일">
+                <input
+                  style={ui.input}
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  disabled={drugStatus === '사용 전'}
+                />
+                <div style={ui.help}>시작일 기준으로 현재 주차를 자동 계산합니다.</div>
+              </Field>
+
+              <Field label="현재 투약 주차">
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input
+                    style={{ ...ui.input, width: 140 }}
+                    type="number"
+                    value={currentWeek}
+                    onChange={(e) => setCurrentWeek(Number(e.target.value))}
+                    min={1}
+                    disabled={weekMode === 'auto' && drugStatus === '사용 중'}
+                  />
+                  {drugStatus === '사용 중' && (
+                    <div style={ui.segmentSmall}>
+                      <button
+                        type="button"
+                        style={{ ...ui.segmentBtnSmall, ...(weekMode === 'auto' ? ui.segmentActiveSmall : {}) }}
+                        onClick={() => {
+                          setWeekMode('auto');
+                          setCurrentWeek(computedWeek);
+                        }}
+                      >
+                        자동
+                      </button>
+                      <button
+                        type="button"
+                        style={{ ...ui.segmentBtnSmall, ...(weekMode === 'manual' ? ui.segmentActiveSmall : {}) }}
+                        onClick={() => setWeekMode('manual')}
+                      >
+                        수동
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {drugStatus === '사용 중' && <div style={ui.help}>자동 계산값: {computedWeek}주차 (필요하면 수동으로 보정하세요)</div>}
+              </Field>
+            </div>
+          </Section>
+
+          <Section title="고민">
+            <div style={ui.grid}>
+              <Field label="다이어트에서 가장 큰 고민">
+                <select style={ui.select} value={mainConcern} onChange={(e) => setMainConcern(e.target.value as any)}>
+                  <option value="요요">요요</option>
+                  <option value="근감소">근감소</option>
+                  <option value="비용">비용</option>
+                  <option value="부작용">부작용</option>
+                </select>
+              </Field>
+
+              <Field label="다이어트 각오">
+                <textarea
+                  style={ui.textarea}
+                  value={resolution}
+                  onChange={(e) => setResolution(e.target.value)}
+                  placeholder="예: 이번에는 기필코..."
+                />
+              </Field>
+            </div>
+          </Section>
 
           <div style={ui.actions}>
             <button type="button" style={ui.primaryBtn} onClick={handleSubmit}>
@@ -342,11 +341,18 @@ export default function HomePage() {
             </button>
           </div>
 
-          <div style={ui.disclaimer}>
-            본 서비스는 의료 진단이 아닌 자기관리 가이드 도구입니다.
-          </div>
+          <div style={ui.disclaimer}>본 서비스는 의료 진단이 아닌 자기관리 가이드 도구입니다.</div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={styles.sectionTitle}>{title}</div>
+      <div style={styles.sectionBody}>{children}</div>
     </div>
   );
 }
@@ -393,6 +399,18 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#ffffff',
     boxShadow: '0 8px 24px rgba(15,23,42,0.06)',
   },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 700,
+    marginBottom: 10,
+    color: '#0f172a',
+  },
+  sectionBody: {
+    padding: 14,
+    border: '1px solid rgba(15,23,42,0.08)',
+    borderRadius: 14,
+    background: 'rgba(15,23,42,0.02)',
+  },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
@@ -405,6 +423,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0 12px',
     fontSize: 14,
     outline: 'none',
+    background: '#fff',
   },
   select: {
     height: 40,
@@ -423,6 +442,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
     outline: 'none',
     resize: 'vertical',
+    background: '#fff',
   },
   segment: {
     display: 'flex',
@@ -466,7 +486,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 6,
   },
   actions: {
-    marginTop: 18,
+    marginTop: 6,
     display: 'flex',
     justifyContent: 'flex-start',
   },
