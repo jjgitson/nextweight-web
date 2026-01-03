@@ -10,33 +10,39 @@ export interface UserData {
   mainConcern: string; resolution: string;
 }
 
-// ✅ TS 에러 해결: name 속성 추가
 export interface RoadmapStep {
   week: number; phase: string; name: string; icon: string; 
-  color: string; start: number; end: number; msg: string;
+  color: string; start: number; end: number; msg: string; weightPct: number;
 }
 
 export function generatePersonalizedAnalysis(userData: UserData) {
-  // 1. 사용자 체중 변화율 계산 (%)
+  // 1. 사용자 % 변화율 계산: (현재 - 시작) / 시작 * 100
   const userLossPct = ((userData.currentWeight - userData.startWeightBeforeDrug) / userData.startWeightBeforeDrug) * 100;
   
   // 2. 현재 스테이지 판별
   const currentStage = STAGES.find(s => userData.currentWeek >= s.start && userData.currentWeek < s.end) || STAGES[STAGES.length - 1];
 
-  // 3. 임상 곡선 대비 비교 (%p 차이)
-  const isMounjaro = userData.drugType === 'MOUNJARO';
-  const selectedDrug = CLINICAL_DATA[userData.drugType];
-  const idx = selectedDrug.weeks.findIndex(w => w >= userData.currentWeek);
-  const clinicalVal = isMounjaro 
-    ? (selectedDrug.dose?.[`${userData.currentDose}mg`] || selectedDrug.dose?.["15mg"])[idx === -1 ? selectedDrug.weeks.length - 1 : idx]
-    : selectedDrug.values[idx === -1 ? selectedDrug.weeks.length - 1 : idx];
+  // 3. 임상 평균 데이터 안전하게 추출 (타입 에러 방지)
+  let clinicalVal = 0;
+  const drugName = userData.drugType === 'MOUNJARO' ? '터제타파이드' : '위고비';
+  
+  if (userData.drugType === 'MOUNJARO') {
+    const data = CLINICAL_DATA.MOUNJARO;
+    const idx = data.weeks.findIndex(w => w >= userData.currentWeek);
+    const doseKey = `${userData.currentDose}mg` as keyof typeof data.dose;
+    clinicalVal = (data.dose[doseKey] || data.dose["15mg"])[idx === -1 ? data.weeks.length - 1 : idx];
+  } else {
+    const data = CLINICAL_DATA.WEGOVY;
+    const idx = data.weeks.findIndex(w => w >= userData.currentWeek);
+    clinicalVal = data.values[idx === -1 ? data.weeks.length - 1 : idx];
+  }
 
-  const diffPct = (userLossPct - (clinicalVal || 0)).toFixed(1);
+  const diffPct = (userLossPct - clinicalVal).toFixed(1);
 
   return {
     userLossPct: Number(userLossPct.toFixed(1)),
     currentStage,
-    comparisonMsg: `동일 주차 기준, ${selectedDrug.name} 평균 곡선 대비 ${Math.abs(Number(diffPct))}%p ${Number(diffPct) <= 0 ? '추가 감량 중' : '위'}에 있습니다.`,
-    roadmap: STAGES.map(s => ({ ...s, week: s.start })) as RoadmapStep[]
+    comparisonMsg: `동일 주차 기준, ${drugName} 평균 곡선 대비 ${Math.abs(Number(diffPct))}%p ${Number(diffPct) <= 0 ? '추가 감량 중' : '위'}에 있습니다.`,
+    roadmap: STAGES.map(s => ({ ...s, week: s.start, weightPct: 0 })) as RoadmapStep[]
   };
 }
