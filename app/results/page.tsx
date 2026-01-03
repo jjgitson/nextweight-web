@@ -22,7 +22,6 @@ function ResultsContent() {
     budget: searchParams.get('budget') || '표준형',
     muscleMass: searchParams.get('muscleMass') || '표준',
     exercise: searchParams.get('exercise') || '안 함',
-    mainConcern: searchParams.get('mainConcern') || '요요',
   };
 
   const analysis = generatePersonalizedAnalysis(userData);
@@ -41,7 +40,7 @@ function ResultsContent() {
               </div>
               <div className="text-right text-[11px] font-bold opacity-70">
                 <p>{analysis.statusCard.drugInfo}</p>
-                <p>{analysis.statusCard.budget} 예산 전략</p>
+                <p>{analysis.statusCard.budget} 전략</p>
               </div>
             </div>
             <div className="pt-4 border-t border-white/10">
@@ -79,7 +78,7 @@ function ResultsContent() {
         </div>
 
         {/* 5. Single Action Sentence */}
-        <p className="text-center text-slate-800 font-bold text-lg px-2 italic">“{analysis.actionSentence}”</p>
+        <p className="text-center text-slate-800 font-bold text-lg px-2 italic">“{analysis.currentStage.msg}”</p>
 
         {/* 6. Chart Placement */}
         <div className="bg-white rounded-3xl overflow-hidden">
@@ -91,8 +90,8 @@ function ResultsContent() {
           {[
             { id: 'cta', title: '나의 체중 경로 관리하기', content: <button className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl">플랜 생성 및 알림 받기</button> },
             { id: 'desc', title: '단계별 상세 설명', content: analysis.currentStage.msg },
-            { id: 'clinical', title: '임상 비교 데이터 근거', content: "본 데이터는 NEJM(2021, 2022) 임상 결과인 STEP-1 및 SURMOUNT-1 데이터를 기준으로 산출됩니다." },
-            { id: 'disclaimer', title: '비의료 자기관리 면책 문구', content: "본 서비스는 의료 진단이 아닌 자기관리 가이드 도구입니다. 모든 결정은 의료진과 상의하세요." }
+            { id: 'clinical', title: '임상 비교 데이터 근거', content: "본 데이터는 NEJM(2021, 2022) 임상 결과 데이터를 기준으로 산출됩니다." },
+            { id: 'disclaimer', title: '비의료 자기관리 면책 문구', content: "본 서비스는 의료 진단이 아닌 자기관리 가이드 도구입니다." }
           ].map(sec => (
             <div key={sec.id} className="border-b border-slate-100 last:border-0">
               <button onClick={() => setOpenSections(prev => ({...prev, [sec.id]: !prev[sec.id]}))} className="w-full py-5 flex justify-between items-center text-slate-400 font-black text-xs uppercase tracking-widest">
