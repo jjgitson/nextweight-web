@@ -1,6 +1,5 @@
 // /app/results/page.tsx
 "use client";
-
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic'; // 추가
@@ -8,10 +7,10 @@ import { generatePersonalizedAnalysis, UserData } from '../../lib/roadmap-engine
 import { STAGES } from '../../lib/drug-config';
 import { ChevronDown } from 'lucide-react';
 
-// ✅ 차트 컴포넌트를 클라이언트 사이드에서만 로드하도록 설정 (SSR 완전 배제)
+// ✅ 차트 컴포넌트를 클라이언트 사이드 전용으로 임포트하여 렌더링 오류 방지
 const RoadmapChart = dynamic(() => import('../../components/RoadmapChart'), { 
-  ssr: false,
-  loading: () => <div className="w-full h-[260px] md:h-[360px] bg-slate-50 animate-pulse rounded-3xl" />
+  ssr: false, 
+  loading: () => <div className="w-full h-[260px] md:h-[360px] bg-slate-50 animate-pulse rounded-3xl" /> 
 });
 
 function ResultsContent() {
@@ -42,7 +41,7 @@ function ResultsContent() {
     <div className="min-h-screen bg-white pb-20 font-sans">
       <div className="max-w-md mx-auto px-6 pt-8 space-y-6 md:max-w-2xl">
         
-        {/* Status Card */}
+        {/* Status Card: Above-the-fold */}
         <div className="bg-slate-900 text-white p-8 rounded-[40px] shadow-2xl space-y-4">
           <div className="flex justify-between items-end">
             <div>
@@ -82,19 +81,19 @@ function ResultsContent() {
             const isPast = userData.currentWeek > s.end;
             return (
               <div key={s.phase} className="flex-1 flex flex-col items-center relative">
-                <div className={`h-1 w-full mb-3 rounded-full transition-all ${isCurrent ? 'bg-blue-600' : isPast ? 'bg-slate-300' : 'bg-slate-100 opacity-50'}`} />
-                <span className={`text-[11px] font-bold ${isCurrent ? 'text-blue-600' : 'text-slate-400'}`}>{s.icon} {s.name}</span>
+                <div className={`h-1.5 w-full mb-3 rounded-full ${isCurrent ? 'bg-blue-600' : isPast ? 'bg-slate-300' : 'bg-slate-100 opacity-50'}`} />
+                <span className={`text-[10px] font-black ${isCurrent ? 'text-blue-600' : 'text-slate-400'}`}>{s.icon} {s.name}</span>
               </div>
             );
           })}
         </div>
 
-        {/* ✅ 차트 컴포넌트 호출 (최소 높이 보장 영역) */}
-        <div className="bg-white rounded-3xl overflow-hidden border border-slate-50 shadow-sm min-h-[260px] md:min-h-[360px]">
+        {/* ✅ 차트 컴포넌트: dynamic import 적용됨 */}
+        <div className="bg-white rounded-3xl overflow-hidden border border-slate-50 shadow-sm">
           <RoadmapChart userData={userData} analysis={analysis} />
         </div>
 
-        {/* 상세 설명 (차트 하단 이동) */}
+        {/* Collapsible Details */}
         <div className="space-y-2 border-t border-slate-50 pt-6">
           {[
             { id: 'cta', title: '나의 체중 경로 관리하기', content: <button className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl">플랜 생성 및 알림 받기</button> },
@@ -103,7 +102,7 @@ function ResultsContent() {
             { id: 'disclaimer', title: '비의료 자기관리 면책 문구', content: "본 서비스는 의료 진단이 아닌 자기관리 가이드 도구입니다." }
           ].map(sec => (
             <div key={sec.id} className="border-b border-slate-100 last:border-0">
-              <button onClick={() => setOpenSections(prev => ({...prev, [sec.id]: !prev[sec.id]}))} className="w-full py-4 flex justify-between items-center text-slate-400 font-black text-xs uppercase tracking-widest">
+              <button onClick={() => setOpenSections(prev => ({...prev, [sec.id]: !prev[sec.id]}))} className="w-full py-5 flex justify-between items-center text-slate-400 font-black text-xs uppercase tracking-widest">
                 <span>{sec.title}</span>
                 <ChevronDown size={14} className={`transition-transform ${openSections[sec.id] ? 'rotate-180' : ''}`} />
               </button>
@@ -118,7 +117,7 @@ function ResultsContent() {
 
 export default function ResultsPage() {
   return (
-    <Suspense fallback={<div className="p-20 text-center font-black text-slate-300 tracking-widest">ANALYZING BRIDGE...</div>}>
+    <Suspense fallback={<div className="p-20 text-center font-black text-slate-300">ANALYZING BRIDGE...</div>}>
       <ResultsContent />
     </Suspense>
   );
