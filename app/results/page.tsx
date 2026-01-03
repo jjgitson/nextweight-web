@@ -7,7 +7,7 @@ import { generatePersonalizedAnalysis, UserData } from '../../lib/roadmap-engine
 import { STAGES } from '../../lib/drug-config';
 import { ChevronDown } from 'lucide-react';
 
-// ✅ 차트 컴포넌트를 클라이언트 사이드 전용으로 임포트하여 렌더링 오류 방지
+// ✅ 차트를 클라이언트 사이드에서만 로드하도록 설정 (차트 미출력 해결 핵심)
 const RoadmapChart = dynamic(() => import('../../components/RoadmapChart'), { 
   ssr: false, 
   loading: () => <div className="w-full h-[260px] md:h-[360px] bg-slate-50 animate-pulse rounded-3xl" /> 
@@ -69,26 +69,11 @@ function ResultsContent() {
           ))}
         </div>
 
-        {/* Action Sentence */}
         <p className="text-center text-slate-800 font-bold text-lg px-2 italic leading-snug">
           “{analysis.currentStage.msg}”
         </p>
 
-        {/* 4-Stage Horizontal Bar */}
-        <div className="flex items-center justify-between px-2 pt-2">
-          {STAGES.map((s) => {
-            const isCurrent = s.phase === analysis.currentStage.phase;
-            const isPast = userData.currentWeek > s.end;
-            return (
-              <div key={s.phase} className="flex-1 flex flex-col items-center relative">
-                <div className={`h-1.5 w-full mb-3 rounded-full ${isCurrent ? 'bg-blue-600' : isPast ? 'bg-slate-300' : 'bg-slate-100 opacity-50'}`} />
-                <span className={`text-[10px] font-black ${isCurrent ? 'text-blue-600' : 'text-slate-400'}`}>{s.icon} {s.name}</span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* ✅ 차트 컴포넌트: dynamic import 적용됨 */}
+        {/* Roadmap Chart: Dynamic Import 적용 */}
         <div className="bg-white rounded-3xl overflow-hidden border border-slate-50 shadow-sm">
           <RoadmapChart userData={userData} analysis={analysis} />
         </div>
