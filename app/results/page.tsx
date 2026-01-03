@@ -39,14 +39,14 @@ function ResultsContent() {
         
         {/* 1️⃣ Above-the-fold Recomposition */}
         <section className="space-y-6">
-          {/* Current Status Card */}
+          {/* Status Card */}
           <div className="bg-slate-50 p-6 rounded-[32px] border border-slate-100 flex flex-col items-center text-center">
-            <span className="text-blue-600 font-black text-sm uppercase tracking-widest mb-1">{analysis.currentStage.name}</span>
+            <span className="text-blue-600 font-black text-xs uppercase tracking-widest mb-1">{analysis.currentStage.name}</span>
             <h2 className="text-3xl font-black text-slate-900 mb-2">{userData.currentWeek}주차</h2>
             <p className="text-slate-500 text-sm font-medium">{analysis.comparisonMsg}</p>
           </div>
 
-          {/* One Action Sentence */}
+          {/* One Action Sentence (Reflective Tone) */}
           <p className="text-center text-slate-800 font-bold text-lg px-4 leading-snug">
             “{analysis.actionSentence}”
           </p>
@@ -77,7 +77,7 @@ function ResultsContent() {
                   {/* Tooltip on current stage */}
                   {isCurrent && (
                     <div className="absolute top-10 z-10 w-48 bg-slate-900 text-white text-[10px] p-3 rounded-xl shadow-xl animate-in fade-in slide-in-from-top-1">
-                      <p className="leading-normal">{s.actionTooltip}</p>
+                      <p className="leading-normal font-medium">{s.actionTooltip}</p>
                     </div>
                   )}
                 </div>
@@ -86,17 +86,17 @@ function ResultsContent() {
           </div>
         </section>
 
-        {/* 3️⃣ Chart First */}
+        {/* 3️⃣ Chart Area */}
         <section className="bg-white rounded-3xl overflow-hidden border border-slate-50">
           <RoadmapChart userData={userData} analysis={analysis} />
         </section>
 
-        {/* 4️⃣ Text Later & Collapsible Sections */}
+        {/* 4️⃣ Collapsible Sections */}
         <section className="space-y-3 pt-4">
           {[
             { id: 'desc', title: '단계별 상세 설명', content: analysis.currentStage.msg },
             { id: 'clinical', title: '임상 비교 데이터 근거', content: "마운자로 SURMOUNT-1(NEJM 2022), 위고비 STEP 1(NEJM 2021) 데이터를 기준으로 개인의 체중 변화를 %p 단위로 산출합니다." },
-            { id: 'disclaimer', title: '비의료 자기관리 면책 문구', content: "본 서비스는 의료 행위가 아닌 자기관리 정보 도구입니다. 약물 용량 조정 등 모든 의학적 결정은 반드시 전문 의료진과 상의하세요." }
+            { id: 'disclaimer', title: '비의료 자기관리 면책 문구', content: "본 서비스는 의료 행위가 아닌 자기관리 정보 도구입니다. 약물 관련 결정은 반드시 의료진과 상의하세요." }
           ].map(sec => (
             <div key={sec.id} className="border-b border-slate-100">
               <button 
