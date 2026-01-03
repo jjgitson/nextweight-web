@@ -6,12 +6,7 @@ import {
 } from 'recharts';
 import { STAGES, CLINICAL_DATA } from '../lib/drug-config';
 
-interface RoadmapChartProps {
-  userData: any;
-  analysis: any;
-}
-
-export default function RoadmapChart({ userData, analysis }: RoadmapChartProps) {
+export default function RoadmapChart({ userData, analysis }: { userData: any, analysis: any }) {
   // 0~72주 고정 차트 데이터 구성
   const chartData = Array.from({ length: 73 }, (_, week) => {
     const getVal = (drug: any, w: number, dose?: string) => {
@@ -19,7 +14,6 @@ export default function RoadmapChart({ userData, analysis }: RoadmapChartProps) 
       const vals = dose ? drug.dose[dose] || drug.dose["15mg"] : drug.values;
       return vals[idx === -1 ? vals.length - 1 : idx];
     };
-
     return {
       week,
       mounjaro: getVal(CLINICAL_DATA.MOUNJARO, week, "15mg"),
@@ -28,16 +22,13 @@ export default function RoadmapChart({ userData, analysis }: RoadmapChartProps) 
   });
 
   return (
-    <div className="w-full h-[400px]">
+    <div className="w-full h-[400px] mt-6">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 30, right: 30, left: 0, bottom: 20 }}>
+        <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
           <XAxis dataKey="week" type="number" domain={[0, 72]} tick={{fontSize: 10}} />
           <YAxis tick={{fontSize: 10}} unit="%" domain={[-25, 5]} />
-          <Tooltip 
-            contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-            formatter={(value: any) => [`${value}%`, '감량률']}
-          />
+          <Tooltip formatter={(val: any) => [`${val}%`, '감량률']} />
           
           {/* 🌊 4-Stage 스테이지 레이어 오버레이 */}
           {STAGES.map(s => (
