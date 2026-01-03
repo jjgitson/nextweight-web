@@ -2,7 +2,7 @@
 "use client";
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { generatePersonalizedRoadmap, UserData, RoadmapStep } from '../../lib/roadmap-engine';
+import { generatePersonalizedAnalysis, UserData, RoadmapStep } from '../../lib/roadmap-engine';
 import RoadmapChart from '../../components/RoadmapChart';
 
 function ResultsContent() {
@@ -25,42 +25,47 @@ function ResultsContent() {
     resolution: searchParams.get('resolution') || '',
   };
 
-  const { roadmap, analysis } = generatePersonalizedRoadmap(userData);
+  const analysis = generatePersonalizedAnalysis(userData);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 p-6">
       <div className="max-w-4xl mx-auto space-y-8">
         <header className="text-center py-6">
           <h1 className="text-4xl font-black italic text-slate-900 tracking-tighter">Next Weight Lab</h1>
-          <p className="text-slate-500 font-bold tracking-tight">4-Stage Metabolic Bridge Tracking</p>
+          <p className="text-slate-500 font-bold">4-Stage Metabolic Bridge Tracking</p>
         </header>
 
-        {/* 성취도 카드 */}
+        {/* 📊 요구사항: 현재 위치 및 비교 분석 메시지 */}
         <div className="bg-blue-600 text-white p-10 rounded-[40px] shadow-lg">
-          <p className="text-xl font-bold mb-2">현재 {userData.userName}님은 {analysis.currentStage.name} ({analysis.currentStage.start}–{analysis.currentStage.end}주)에 위치해 있습니다.</p>
+          <p className="text-xl font-bold mb-2">현재 {userData.userName}님은 {analysis.currentStage.name} ({analysis.currentStage.start}–{analysis.currentStage.end}주) 단계에 있습니다.</p>
           <p className="text-lg opacity-90">{analysis.comparisonMsg}</p>
         </div>
 
-        {/* 타임라인 카드 */}
+        {/* 🌉 요구사항: 4-Stage 정보 디자인 타임라인 */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {roadmap.map((step: RoadmapStep, i: number) => (
-            <div key={i} className="relative p-6 rounded-3xl border border-slate-50 bg-white" style={{borderTop: `6px solid ${step.color}`}}>
+          {analysis.roadmap.map((step: RoadmapStep, i: number) => (
+            <div key={i} className="relative p-6 rounded-3xl border border-slate-100 bg-white" style={{borderTop: `6px solid ${step.color}`}}>
               <div className="text-2xl mb-2">{step.icon}</div>
-              <div className="text-[10px] font-black uppercase tracking-widest mb-1" style={{color: step.color}}>{step.phase}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest mb-1" style={{color: step.color}}>{step.name}</div>
               <div className="text-[11px] text-slate-500 leading-relaxed">{step.msg}</div>
+              {userData.currentWeek >= step.start && userData.currentWeek < step.end && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] px-2 py-1 rounded-full font-bold">현재 위치</div>
+              )}
             </div>
           ))}
         </div>
 
-        {/* 차트: 에러 해결 포인트 (roadmap, userData, analysis 모두 전달) */}
+        {/* 📈 요구사항: 개인화 체중 추적 차트 */}
         <div className="bg-white p-10 rounded-[50px] shadow-sm border border-slate-100">
-          <h2 className="text-2xl font-black mb-8 italic">Weight Change Simulation (%)</h2>
-          <RoadmapChart data={roadmap} userData={userData} analysis={analysis} />
+          <h2 className="text-2xl font-black mb-8 italic">Weight Path Simulation (%)</h2>
+          <RoadmapChart userData={userData} analysis={analysis} />
         </div>
 
+        {/* 🛡️ 요구사항: 비의료 안전 문구 고정 */}
         <footer className="mt-20 pt-10 border-t border-slate-200 text-center">
           <p className="text-slate-400 text-[10px] leading-relaxed max-w-lg mx-auto">
-            본 차트는 임상 연구 평균값과 개인 기록을 비교해 보여주는 자기관리용 정보 도구입니다. 의료적 판단이나 처방을 제공하지 않습니다.
+            본 차트는 임상 연구 평균값과 개인 기록을 비교해 보여주는 자기관리용 정보 도구입니다. 
+            의료적 판단이나 처방을 제공하지 않습니다.
           </p>
         </footer>
       </div>
@@ -70,7 +75,7 @@ function ResultsContent() {
 
 export default function ResultsPage() {
   return (
-    <Suspense fallback={<div className="p-20 text-center font-bold">분석 중...</div>}>
+    <Suspense fallback={<div className="p-20 text-center font-bold">대사 가교를 분석 중입니다...</div>}>
       <ResultsContent />
     </Suspense>
   );
