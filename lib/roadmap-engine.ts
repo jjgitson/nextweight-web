@@ -14,11 +14,10 @@ export function generatePersonalizedAnalysis(userData: UserData) {
 
   let clinicalVal = 0;
   const drugConfig = DRUG_TYPES[userData.drugType];
-  const isMounjaro = userData.drugType === 'MOUNJARO';
-  const clinicalRef = isMounjaro ? CLINICAL_DATA.MOUNJARO : CLINICAL_DATA.WEGOVY;
+  const clinicalRef = CLINICAL_DATA[userData.drugType];
   const idx = clinicalRef.weeks.findIndex(w => w >= userData.currentWeek);
   
-  if (isMounjaro) {
+  if (userData.drugType === 'MOUNJARO') {
     const doseKey = `${userData.currentDose}mg` as keyof typeof CLINICAL_DATA.MOUNJARO.dose;
     clinicalVal = (CLINICAL_DATA.MOUNJARO.dose[doseKey] || CLINICAL_DATA.MOUNJARO.dose["15mg"])[idx === -1 ? 10 : idx];
   } else {
@@ -37,7 +36,7 @@ export function generatePersonalizedAnalysis(userData: UserData) {
       budget: userData.budget,
       comparison: `동일 주차 기준, ${drugConfig.name} 평균 대비 ${Math.abs(Number(diffPct))}%p ${Number(diffPct) <= 0 ? '아래' : '위'}에 있습니다.`
     },
-    gpsIndicators: [
+    gps: [
       { label: 'G Drug', value: `${drugConfig.name} ${userData.currentDose}mg`, status: 'normal' },
       { label: 'P Protein', value: userData.muscleMass, status: userData.muscleMass === '이하' ? 'attention' : 'normal' },
       { label: 'S Strength', value: userData.exercise, status: userData.exercise === '안 함' ? 'attention' : 'normal' }
