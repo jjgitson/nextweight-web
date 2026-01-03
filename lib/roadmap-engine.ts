@@ -1,5 +1,5 @@
 // /lib/roadmap-engine.ts
-import { DRUG_TYPES, MounjaroPoint, WegovyPoint } from './drug-config';
+import { DRUG_TYPES, MounjaroPoint, WegovyPoint, CLINICAL_WEEKS } from './drug-config';
 
 export interface UserData {
   userName: string; userAge: number; userGender: string;
@@ -14,45 +14,31 @@ export function generatePersonalizedRoadmap(userData: UserData) {
   const drug = DRUG_TYPES[userData.drugType];
   const clinical = drug.clinicalData;
 
-  // 1. 임상 대비 성취도 분석
+  // 1. 임상 평균 대비 성취도 분석 (Performance)
   let performance = null;
   if (userData.drugStatus === '사용 중') {
     const elapsedWeeks = userData.currentWeek;
     const clinicalPoint = [...clinical].reverse().find(p => p.week <= elapsedWeeks) || clinical[0];
-    
-    let clinicalPercent = 0;
-    if (userData.drugType === 'MOUNJARO') {
-      const p = clinicalPoint as MounjaroPoint;
-      clinicalPercent = userData.currentDose >= 15 ? p.mg15 : userData.currentDose >= 10 ? p.mg10 : p.mg5;
-    } else {
-      clinicalPercent = (clinicalPoint as WegovyPoint).mg24;
-    }
-
+    const clinicalPercent = userData.drugType === 'MOUNJARO' ? (clinicalPoint as MounjaroPoint).mg15 : (clinicalPoint as WegovyPoint).mg24;
     const userLossPercent = ((userData.currentWeight - userData.startWeightBeforeDrug) / userData.startWeightBeforeDrug) * 100;
-    const clinicalAvgWeight = userData.startWeightBeforeDrug * (1 + clinicalPercent / 100);
-
     performance = {
       userLoss: userLossPercent.toFixed(1),
       clinicalAvg: clinicalPercent.toFixed(1),
-      weightDiff: (userData.currentWeight - clinicalAvgWeight).toFixed(1),
-      status: userLossPercent <= clinicalPercent ? "임상 대비 우수" : "추적 관리 필요"
+      status: userLossPercent <= clinicalPercent ? "임상 대비 우수" : "추적 관리 필요",
+      weightDiff: (userData.currentWeight - (userData.startWeightBeforeDrug * (1 + clinicalPercent / 100))).toFixed(1)
     };
   }
 
-  // 2. 단계별 가이드 (Bridge Engine 및 SOS 데이터 기반)
+  // 2. 타임라인 정보 디자인 (Infographic Stages)
   const roadmap = clinical.map((c: any) => {
     const clinicalPercent = userData.drugType === 'MOUNJARO' ? c.mg15 : c.mg24;
-    let phase = "감량기";
-    let guidance = "[가속기] 터제타파이드의 효과를 근육 자산으로 전환할 때입니다.";
-    if (c.week <= 4) { phase = "적응기"; guidance = "[적응기] 기초 수분 2L 섭취로 몸의 변화에 적응하세요."; }
-    else if (c.week >= 24) { phase = "가교기"; guidance = "[가교기] 약물 농도가 낮아집니다. 저항성 운동이 요요를 결정합니다."; }
+    let stage = { phase: "감량기", name: "체지방 연소 피크", color: "#10B981", msg: "터제타파이드의 효과를 근육 자산으로 전환할 때입니다." };
+    
+    if (c.week <= 4) stage = { phase: "적응기", name: "몸의 변화 인지", color: "#3B82F6", msg: "약물에 적응 중입니다. 수분 2L로 부작용을 관리하세요." };
+    else if (c.week >= 48) stage = { phase: "유지기", name: "요요 방어선 완성", color: "#8B5CF6", msg: "건강한 대사 체계가 안착되었습니다." };
+    else if (c.week >= 24) stage = { phase: "가교기", name: "대사 전환 엔진 가동", color: "#F59E0B", msg: `${userData.budget} 전략에 따른 저항성 운동이 핵심입니다!` };
 
-    return { 
-      week: c.week, 
-      weight: (userData.startWeightBeforeDrug * (1 + clinicalPercent / 100)).toFixed(1), 
-      phase, 
-      guidance 
-    };
+    return { week: c.week, weight: (userData.startWeightBeforeDrug * (1 + clinicalPercent / 100)).toFixed(1), ...stage };
   });
 
   return { performance, roadmap, drugName: drug.name };
