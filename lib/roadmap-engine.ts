@@ -10,8 +10,9 @@ export interface UserData {
   mainConcern: string; resolution: string;
 }
 
+// ✅ TS 에러 해결: name 속성 추가
 export interface RoadmapStep {
-  week: number; phase: string; icon: string; 
+  week: number; phase: string; name: string; icon: string; 
   color: string; start: number; end: number; msg: string;
 }
 
@@ -31,12 +32,11 @@ export function generatePersonalizedAnalysis(userData: UserData) {
     : selectedDrug.values[idx === -1 ? selectedDrug.weeks.length - 1 : idx];
 
   const diffPct = (userLossPct - (clinicalVal || 0)).toFixed(1);
-  const comparisonMsg = `동일 주차 기준, ${selectedDrug.name} 평균 곡선 대비 ${Math.abs(Number(diffPct))}%p ${Number(diffPct) <= 0 ? '추가 감량 중' : '위'}에 있습니다.`;
 
   return {
     userLossPct: Number(userLossPct.toFixed(1)),
     currentStage,
-    comparisonMsg,
+    comparisonMsg: `동일 주차 기준, ${selectedDrug.name} 평균 곡선 대비 ${Math.abs(Number(diffPct))}%p ${Number(diffPct) <= 0 ? '추가 감량 중' : '위'}에 있습니다.`,
     roadmap: STAGES.map(s => ({ ...s, week: s.start })) as RoadmapStep[]
   };
 }
