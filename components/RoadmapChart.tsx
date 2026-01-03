@@ -2,12 +2,11 @@
 "use client";
 import { 
   ComposedChart, Line, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, ReferenceDot, ReferenceArea, Label
+  Tooltip, ResponsiveContainer, ReferenceDot, ReferenceArea
 } from 'recharts';
 import { STAGES, CLINICAL_DATA } from '../lib/drug-config';
 
 export default function RoadmapChart({ userData, analysis }: { userData: any, analysis: any }) {
-  // 임상 곡선 상시 렌더링 데이터 (0~72주 고정)
   const chartData = Array.from({ length: 73 }, (_, week) => {
     const getVal = (drug: any, w: number, dose?: string) => {
       const idx = drug.weeks.findIndex((dw: number) => dw >= w);
@@ -22,38 +21,41 @@ export default function RoadmapChart({ userData, analysis }: { userData: any, an
   });
 
   return (
-    // 요구사항: Desktop min-height 320px, Mobile min-height 240px
-    <div className="w-full min-h-[240px] md:min-h-[320px] bg-white rounded-3xl relative overflow-hidden">
-      <ResponsiveContainer width="100%" height={320}>
-        <ComposedChart data={chartData} margin={{ top: 30, right: 30, left: 0, bottom: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-          <XAxis dataKey="week" type="number" domain={[0, 72]} tick={{fontSize: 10}} />
-          
-          {/* 요구사항: Y-axis domain 고정 0% to -25% */}
-          <YAxis tick={{fontSize: 10}} unit="%" domain={[0, -25]} allowDataOverflow={false} />
+    // 요구사항: Mobile 240px, Desktop 320px 고정
+    <div className="w-full h-[240px] md:h-[320px] bg-white rounded-3xl relative">
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={chartData} margin={{ top: 20, right: 60, left: 10, bottom: 10 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+          <XAxis dataKey="week" type="number" domain={[0, 72]} hide />
+          <YAxis domain={[0, -25]} hide />
           
           <Tooltip 
-            contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-            formatter={(value: any) => [`${Number(value).toFixed(1)}%`, '감량률']}
+            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+            formatter={(val: any) => [`${Number(val).toFixed(1)}%`, '']}
           />
           
+          {/* 요구사항: 배경 쉐이딩 유지, 텍스트 라벨 제거 */}
           {STAGES.map(s => (
-            <ReferenceArea key={s.phase} x1={s.start} x2={s.end} fill={s.color} fillOpacity={0.04}>
-              <Label value={`${s.icon} ${s.name}`} position="insideTop" fill={s.color} fontSize={9} fontWeight="bold" />
-            </ReferenceArea>
+            <ReferenceArea key={s.phase} x1={s.start} x2={s.end} fill={s.color} fillOpacity={0.03} />
           ))}
 
-          {/* 임상 기준 곡선 상시 렌더링 */}
-          <Line type="monotone" dataKey="mounjaro" stroke="#94a3b8" strokeDasharray="5 5" dot={false} name="터제타파이드 평균" isAnimationActive={false} />
-          <Line type="monotone" dataKey="wegovy" stroke="#cbd5e1" strokeDasharray="5 5" dot={false} name="위고비 평균" isAnimationActive={false} />
+          {/* 요구사항: 임상 곡선 라벨 직접 표시 */}
+          <Line 
+            type="monotone" dataKey="mounjaro" stroke="#94a3b8" strokeDasharray="4 4" dot={false} strokeWidth={1}
+            label={{ position: 'right', value: '터제타파이드', fill: '#94a3b8', fontSize: 10 }}
+          />
+          <Line 
+            type="monotone" dataKey="wegovy" stroke="#cbd5e1" strokeDasharray="4 4" dot={false} strokeWidth={1}
+            label={{ position: 'right', value: '위고비', fill: '#cbd5e1', fontSize: 10 }}
+          />
           
-          {/* 사용자 포인트 마커 */}
+          {/* 요구사항: "나의 현재" 마커 및 시각적 포커스 */}
           {userData.drugStatus === '사용 중' && (
             <ReferenceDot 
               x={userData.currentWeek} 
-              y={analysis.userLossPct || 0} 
-              r={8} fill="#2563EB" stroke="white" strokeWidth={3}
-              label={{ position: 'top', value: '나의 현재', fill: '#2563EB', fontSize: 11, fontWeight: "900" }} 
+              y={analysis.userLossPct} 
+              r={7} fill="#2563EB" stroke="white" strokeWidth={3}
+              label={{ position: 'top', value: '나의 현재', fill: '#1e40af', fontSize: 11, fontWeight: "800" }} 
             />
           )}
         </ComposedChart>
