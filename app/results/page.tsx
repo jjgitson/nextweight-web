@@ -1,14 +1,17 @@
 // /app/results/page.tsx
 "use client";
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { generatePersonalizedAnalysis, UserData, RoadmapStep } from '../../lib/roadmap-engine';
+import { generatePersonalizedAnalysis, UserData } from '../../lib/roadmap-engine';
 import RoadmapChart from '../../components/RoadmapChart';
+import { STAGES } from '../../lib/drug-config';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 function ResultsContent() {
   const searchParams = useSearchParams();
-  
+  const [openSections, setOpenSections] = useState<{[key: string]: boolean}>({});
+
   const userData: UserData = {
     userName: searchParams.get('userName') || '사용자',
     userAge: Number(searchParams.get('userAge')) || 35,
@@ -28,50 +31,89 @@ function ResultsContent() {
   };
 
   const analysis = generatePersonalizedAnalysis(userData);
+  const toggleSection = (id: string) => setOpenSections(prev => ({...prev, [id]: !prev[id]}));
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20 p-6 font-sans">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <header className="text-center py-6">
-          <h1 className="text-4xl font-black italic text-slate-900 tracking-tighter uppercase">Next Weight Lab</h1>
-          <p className="text-slate-500 font-bold mt-2">비싼 다이어트가 요요로 끝나지 않도록.</p>
-        </header>
+    <div className="min-h-screen bg-white pb-20">
+      <div className="max-w-md mx-auto px-6 pt-10 space-y-8 md:max-w-2xl">
+        
+        {/* 1️⃣ Above-the-fold Recomposition */}
+        <section className="space-y-6">
+          {/* Current Status Card */}
+          <div className="bg-slate-50 p-6 rounded-[32px] border border-slate-100 flex flex-col items-center text-center">
+            <span className="text-blue-600 font-black text-sm uppercase tracking-widest mb-1">{analysis.currentStage.name}</span>
+            <h2 className="text-3xl font-black text-slate-900 mb-2">{userData.currentWeek}주차</h2>
+            <p className="text-slate-500 text-sm font-medium">{analysis.comparisonMsg}</p>
+          </div>
 
-        {/* 성취도 분석 카드 */}
-        <div className="bg-blue-600 text-white p-10 rounded-[40px] shadow-2xl">
-          <p className="text-xl font-bold mb-2">현재 {userData.userName}님은 {analysis.currentStage.name} 구간에 있습니다.</p>
-          <p className="text-lg opacity-90 leading-snug">{analysis.comparisonMsg}</p>
-        </div>
+          {/* One Action Sentence */}
+          <p className="text-center text-slate-800 font-bold text-lg px-4 leading-snug">
+            “{analysis.actionSentence}”
+          </p>
 
-        {/* 4-Stage 정보 디자인 타임라인 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {analysis.roadmap.map((step: RoadmapStep, i: number) => (
-            <div key={i} className="relative p-6 rounded-3xl border border-slate-100 bg-white shadow-sm" style={{borderTop: `6px solid ${step.color}`}}>
-              <div className="text-2xl mb-2">{step.icon}</div>
-              <div className="text-[10px] font-black uppercase tracking-widest mb-1" style={{color: step.color}}>{step.name}</div>
-              <div className="text-[11px] text-slate-500 leading-relaxed font-medium">{step.msg}</div>
-              {userData.currentWeek >= step.start && userData.currentWeek < step.end && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] px-3 py-1 rounded-full font-black shadow-lg">CURRENT</div>
+          {/* Primary CTA */}
+          <button className="w-full py-5 bg-blue-600 text-white font-black text-lg rounded-2xl shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all">
+            나의 체중 경로 관리하기
+          </button>
+        </section>
+
+        {/* 2️⃣ Stage Bar Compression */}
+        <section className="overflow-x-auto pb-2 scrollbar-hide swipeable-container">
+          <div className="flex items-center min-w-[400px] justify-between px-2">
+            {STAGES.map((s, idx) => {
+              const isCurrent = s.phase === analysis.currentStage.phase;
+              const isPast = userData.currentWeek > s.end;
+              const isFuture = userData.currentWeek < s.start;
+
+              return (
+                <div key={s.phase} className="flex-1 flex flex-col items-center relative group">
+                  <div className={`h-1.5 w-full mb-3 rounded-full transition-all ${
+                    isCurrent ? 'bg-blue-600' : isPast ? 'bg-slate-200' : 'bg-slate-100 opacity-50'
+                  }`} />
+                  <span className={`text-[11px] font-bold ${
+                    isCurrent ? 'text-blue-600' : 'text-slate-400'
+                  }`}>{s.name}</span>
+                  
+                  {/* Tooltip on current stage */}
+                  {isCurrent && (
+                    <div className="absolute top-10 z-10 w-48 bg-slate-900 text-white text-[10px] p-3 rounded-xl shadow-xl animate-in fade-in slide-in-from-top-1">
+                      <p className="leading-normal">{s.actionTooltip}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* 3️⃣ Chart First */}
+        <section className="bg-white rounded-3xl overflow-hidden border border-slate-50">
+          <RoadmapChart userData={userData} analysis={analysis} />
+        </section>
+
+        {/* 4️⃣ Text Later & Collapsible Sections */}
+        <section className="space-y-3 pt-4">
+          {[
+            { id: 'desc', title: '단계별 상세 설명', content: analysis.currentStage.msg },
+            { id: 'clinical', title: '임상 비교 데이터 근거', content: "마운자로 SURMOUNT-1(NEJM 2022), 위고비 STEP 1(NEJM 2021) 데이터를 기준으로 개인의 체중 변화를 %p 단위로 산출합니다." },
+            { id: 'disclaimer', title: '비의료 자기관리 면책 문구', content: "본 서비스는 의료 행위가 아닌 자기관리 정보 도구입니다. 약물 용량 조정 등 모든 의학적 결정은 반드시 전문 의료진과 상의하세요." }
+          ].map(sec => (
+            <div key={sec.id} className="border-b border-slate-100">
+              <button 
+                onClick={() => toggleSection(sec.id)}
+                className="w-full py-4 flex justify-between items-center text-slate-400 font-bold text-sm"
+              >
+                <span>{sec.title}</span>
+                <span className="text-[11px] flex items-center gap-1">자세히 보기 {openSections[sec.id] ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}</span>
+              </button>
+              {openSections[sec.id] && (
+                <div className="pb-6 text-slate-600 text-sm leading-relaxed animate-in slide-in-from-top-1">
+                  {sec.content}
+                </div>
               )}
             </div>
           ))}
-        </div>
-
-        {/* 차트 컨테이너 (고정 높이 요구사항 반영) */}
-        <div className="bg-white p-10 rounded-[50px] shadow-sm border border-slate-50">
-          <h2 className="text-2xl font-black mb-8 italic text-slate-900 underline decoration-blue-500 decoration-4 underline-offset-8">Weight Path Simulation (%)</h2>
-          <div className="min-h-[240px] md:min-h-[320px]">
-            <RoadmapChart userData={userData} analysis={analysis} />
-          </div>
-        </div>
-
-        {/* 비의료 안전 문구 고정 */}
-        <footer className="mt-20 pt-10 border-t border-slate-200 text-center">
-          <p className="text-slate-400 text-[10px] leading-relaxed max-w-lg mx-auto font-medium">
-            본 차트는 임상 연구 평균값과 개인 기록을 비교해 보여주는 자기관리용 정보 도구입니다. 
-            의료적 판단이나 처방을 제공하지 않습니다.
-          </p>
-        </footer>
+        </section>
       </div>
     </div>
   );
@@ -79,12 +121,7 @@ function ResultsContent() {
 
 export default function ResultsPage() {
   return (
-    <Suspense fallback={
-      <div className="p-20 text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
-        <p className="mt-4 font-black text-slate-400">ANALYZING METABOLIC BRIDGE...</p>
-      </div>
-    }>
+    <Suspense fallback={<div className="p-20 text-center font-black text-slate-300">ANALYZING BRIDGE...</div>}>
       <ResultsContent />
     </Suspense>
   );
