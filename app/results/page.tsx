@@ -186,7 +186,7 @@ export default async function ResultsPage({
     { when: "1~2주 차", name: "적응기 고비", desc: "울렁거림이나 무기력증이 올 수 있습니다. 소량씩 자주 먹는 전략이 필요합니다." },
     { when: "8~12주 차", name: "첫 번째 정체기", desc: "몸이 바뀐 체중에 적응하며 감량이 더뎌집니다. 이때 포기하지 않는 것이 '유료 관리'의 핵심 지점입니다." },
     { when: "투약 종료 전후", name: "리바운드 주의보", desc: "약물 농도가 떨어지며 억제됐던 허기가 몰려옵니다. 이때 HMB 등 대사 가교 전략이 승부처입니다." },
-  
+  ];
   const selectedBudget = budgetTable.find((x) => x.tier === userData.budget) || null;
 
   const stageName = analysis?.currentStage?.name || "";
