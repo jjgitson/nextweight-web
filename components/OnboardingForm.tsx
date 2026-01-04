@@ -3,157 +3,122 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-type DrugType = "MOUNJARO" | "WEGOVY";
-type DrugStatus = "사용 전" | "사용 중";
-
-type FormData = {
-  userName: string;
-  userAge: number;
-  userGender: "여성" | "남성";
-  exercise: "안 함" | "1-2회" | "3-4회" | "5회+";
-  muscleMass: "모름" | "이하" | "표준" | "이상";
-  budget: "실속형" | "표준형" | "집중형";
-
-  currentWeight: number;
-  targetWeight: number;
-
-  drugStatus: DrugStatus;
-  drugType: DrugType;
-  startWeightBeforeDrug: number;
-
-  currentDose: number; // 숫자 유지
-  startDate?: string; // YYYY-MM-DD
-  currentWeek: number;
-
-  weekMode: "auto" | "manual"; // 자동/수동
-  mainConcern: "요요" | "근감소" | "비용" | "부작용";
-  resolution: string;
+type Props = {
+  onComplete: (data: any) => void;
 };
 
-function safeNumber(v: any, fallback: number) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
+type DrugType = "MOUNJARO" | "WEGOVY";
+type DrugStatus = "사용 전" | "사용 중";
+type WeekMode = "AUTO" | "MANUAL";
+
+const DOSE_OPTIONS: Record<DrugType, number[]> = {
+  MOUNJARO: [2.5, 5, 7.5, 10, 12.5, 15],
+  WEGOVY: [0.25, 0.5, 1, 1.7, 2.4],
+};
+
+function clampNumber(v: number, min: number, max: number) {
+  if (Number.isNaN(v)) return min;
+  return Math.min(max, Math.max(min, v));
 }
 
-function weekFromStartDate(startDate?: string) {
+function calcWeekFromStartDate(startDate: string | undefined) {
   if (!startDate) return 0;
   const start = new Date(startDate);
   if (Number.isNaN(start.getTime())) return 0;
-  const now = new Date();
-  const diffMs = now.getTime() - start.getTime();
+
+  const today = new Date();
+  const diffMs = today.getTime() - start.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  // 시작일부터 1주차로 보는 방식
-  const w = Math.floor(diffDays / 7) + 1;
-  return Math.max(0, w);
+  const w = Math.floor(diffDays / 7);
+
+  return clampNumber(w, 0, 500);
 }
 
-function doseOptions(drugType: DrugType) {
-  if (drugType === "MOUNJARO") {
-    return [2.5, 5, 7.5, 10, 12.5, 15];
-  }
-  return [0.25, 0.5, 1, 1.7, 2.4];
-}
-
-function formatDoseMg(v: number) {
-  // 1 -> "1 mg", 2.5 -> "2.5 mg"
-  return `${Number.isInteger(v) ? v.toFixed(0) : v} mg`;
-}
-
-function budgetHelpText(budget: FormData["budget"]) {
-  const base =
-    "GLP-1은 비싼 다이어트입니다. 예산에 맞게 효율적인 전략이 필요합니다. 예산 범위는 개인마다 달라 3가지 범주로 구분했습니다.";
-  if (budget === "실속형") return base + " 실속형은 추가 지출을 최소화하고, 생활 습관으로 대사 방어를 만드는 접근입니다.";
-  if (budget === "표준형") return base + " 표준형은 핵심 보충(예: 단백질, HMB 등)으로 근손실을 방어하는 접근입니다.";
-  return base + " 집중형은 운동/영양을 더 촘촘히 설계해 약물 의존도를 빨리 낮추는 접근입니다.";
-}
-
-export default function OnboardingForm({ onComplete }: { onComplete: (data: any) => void }) {
-  const [formData, setFormData] = useState<FormData>({
+export default function OnboardingForm({ onComplete }: Props) {
+  const [formData, setFormData] = useState({
+    // 기본 정보
     userName: "",
     userAge: 35,
-    userGender: "여성",
+    userGender: "남성",
     exercise: "안 함",
     muscleMass: "모름",
     budget: "표준형",
 
+    // 체중 정보
     currentWeight: 80,
     targetWeight: 65,
 
-    drugStatus: "사용 전",
-    drugType: "MOUNJARO",
+    // 투약 정보
+    drugStatus: "사용 전" as DrugStatus,
+    drugType: "MOUNJARO" as DrugType,
     startWeightBeforeDrug: 80,
-
-    currentDose: 0,
-    startDate: "",
+    currentDose: 2.5,
+    startDate: "" as string, // yyyy-mm-dd
+    weekMode: "AUTO" as WeekMode,
     currentWeek: 0,
 
-    weekMode: "auto",
+    // 고민
     mainConcern: "요요",
     resolution: "",
   });
 
-  const labelClass = "text-xs font-bold text-slate-500 mb-2 block tracking-tight";
+  const labelClass =
+    "text-sm font-black text-slate-700 mb-2 block tracking-tight";
+  const helpClass = "text-xs text-slate-500 mt-2 leading-relaxed";
   const inputClass =
-    "w-full p-4 bg-white rounded-2xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all";
-  const sectionCard =
-    "bg-white p-8 rounded-[34px] border border-slate-100 shadow-sm space-y-6";
-  const sectionTitle = "text-sm font-black text-slate-900 tracking-tight";
+    "w-full px-4 py-3 bg-white rounded-2xl border border-slate-200 focus:ring-2 focus:ring-slate-300 outline-none transition-all";
 
-  // 약물 바뀌면 용량 선택지 리셋(현재 용량이 옵션에 없으면 첫 옵션으로)
+  const doseOptions = useMemo(() => DOSE_OPTIONS[formData.drugType], [formData.drugType]);
+
+  // 약물 변경 시 용량이 범위 밖이면 첫 옵션으로 보정
   useEffect(() => {
-    const opts = doseOptions(formData.drugType);
-    if (formData.drugStatus !== "사용 중") {
-      setFormData((p) => ({ ...p, currentDose: 0 }));
-      return;
-    }
-    if (!opts.includes(formData.currentDose)) {
-      setFormData((p) => ({ ...p, currentDose: opts[0] }));
+    if (!doseOptions.includes(formData.currentDose)) {
+      setFormData((prev) => ({ ...prev, currentDose: doseOptions[0] }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.drugType, formData.drugStatus]);
+  }, [formData.drugType]);
 
-  // startDate 기반 자동 주차 계산(weekMode=auto, drugStatus=사용 중일 때만)
+  // AUTO 모드면 시작일 기준 주차 자동 계산
   useEffect(() => {
-    if (formData.drugStatus !== "사용 중") {
-      setFormData((p) => ({ ...p, currentWeek: 0 }));
-      return;
-    }
-    if (formData.weekMode !== "auto") return;
+    if (formData.drugStatus !== "사용 중") return;
+    if (formData.weekMode !== "AUTO") return;
 
-    const w = weekFromStartDate(formData.startDate);
-    setFormData((p) => ({ ...p, currentWeek: w }));
+    const w = calcWeekFromStartDate(formData.startDate || undefined);
+    setFormData((prev) => ({ ...prev, currentWeek: w }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.startDate, formData.weekMode, formData.drugStatus]);
 
-  const doseOpts = useMemo(() => doseOptions(formData.drugType), [formData.drugType]);
+  const budgetDescription =
+    "GLP-1은 비용이 큰 다이어트입니다. 예산에 맞게 효율적인 전략이 필요합니다. 사용자마다 관리 범위가 달라 3가지 예산 등급으로 표현했습니다.";
 
-  const submit = () => {
-    const payload: any = { ...formData };
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
 
-    // 사용 전이면 투약 관련 값 정리
-    if (payload.drugStatus !== "사용 중") {
-      payload.currentDose = 0;
-      payload.currentWeek = 0;
-      payload.startDate = "";
-      payload.startWeightBeforeDrug = payload.currentWeight;
-      payload.weekMode = "auto";
-    }
+    const payload = {
+      ...formData,
+      // 사용 전이면 투약 관련 값들을 최소화해서 전달
+      startWeightBeforeDrug:
+        formData.drugStatus === "사용 중"
+          ? Number(formData.startWeightBeforeDrug)
+          : Number(formData.currentWeight),
+      currentDose: formData.drugStatus === "사용 중" ? Number(formData.currentDose) : 0,
+      startDate: formData.drugStatus === "사용 중" ? (formData.startDate || "") : "",
+      currentWeek: formData.drugStatus === "사용 중" ? Number(formData.currentWeek) : 0,
+    };
 
     onComplete(payload);
   };
 
   return (
     <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-      className="max-w-3xl mx-auto space-y-6"
+      onSubmit={submit}
+      className="max-w-3xl mx-auto space-y-6 bg-white p-10 md:p-12 rounded-[32px] shadow-xl border border-slate-100"
     >
       {/* 기본 정보 */}
-      <div className={`${sectionCard} bg-slate-50`}>
-        <div className={sectionTitle}>기본 정보</div>
+      <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6 md:p-7">
+        <div className="text-lg font-black text-slate-900 mb-5">기본 정보</div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label className={labelClass}>성함</label>
             <input
@@ -161,8 +126,10 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
               required
               className={inputClass}
               value={formData.userName}
-              onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
-              placeholder="예: 홍길동"
+              onChange={(e) =>
+                setFormData({ ...formData, userName: e.target.value })
+              }
+              placeholder="예: 서진원"
             />
           </div>
 
@@ -172,7 +139,12 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
               type="number"
               className={inputClass}
               value={formData.userAge}
-              onChange={(e) => setFormData({ ...formData, userAge: safeNumber(e.target.value, 35) })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  userAge: clampNumber(Number(e.target.value), 0, 120),
+                })
+              }
             />
           </div>
 
@@ -181,10 +153,12 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
             <select
               className={inputClass}
               value={formData.userGender}
-              onChange={(e) => setFormData({ ...formData, userGender: e.target.value as any })}
+              onChange={(e) =>
+                setFormData({ ...formData, userGender: e.target.value })
+              }
             >
-              <option value="여성">여성</option>
-              <option value="남성">남성</option>
+              <option>여성</option>
+              <option>남성</option>
             </select>
           </div>
 
@@ -193,12 +167,14 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
             <select
               className={inputClass}
               value={formData.exercise}
-              onChange={(e) => setFormData({ ...formData, exercise: e.target.value as any })}
+              onChange={(e) =>
+                setFormData({ ...formData, exercise: e.target.value })
+              }
             >
-              <option value="안 함">안 함</option>
-              <option value="1-2회">1-2회</option>
-              <option value="3-4회">3-4회</option>
-              <option value="5회+">5회+</option>
+              <option>안 함</option>
+              <option>1-2회</option>
+              <option>3-4회</option>
+              <option>5회+</option>
             </select>
           </div>
 
@@ -207,12 +183,14 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
             <select
               className={inputClass}
               value={formData.muscleMass}
-              onChange={(e) => setFormData({ ...formData, muscleMass: e.target.value as any })}
+              onChange={(e) =>
+                setFormData({ ...formData, muscleMass: e.target.value })
+              }
             >
-              <option value="모름">모름</option>
-              <option value="이하">이하</option>
-              <option value="표준">표준</option>
-              <option value="이상">이상</option>
+              <option>모름</option>
+              <option>이하</option>
+              <option>표준</option>
+              <option>이상</option>
             </select>
           </div>
 
@@ -221,51 +199,61 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
             <select
               className={inputClass}
               value={formData.budget}
-              onChange={(e) => setFormData({ ...formData, budget: e.target.value as any })}
+              onChange={(e) =>
+                setFormData({ ...formData, budget: e.target.value })
+              }
             >
-              <option value="실속형">실속형</option>
-              <option value="표준형">표준형</option>
-              <option value="집중형">집중형</option>
+              <option>실속형</option>
+              <option>표준형</option>
+              <option>집중형</option>
             </select>
-            <div className="mt-2 text-xs text-slate-500 leading-relaxed">
-              {budgetHelpText(formData.budget)}
-            </div>
+            <div className={helpClass}>{budgetDescription}</div>
           </div>
         </div>
       </div>
 
       {/* 체중 목표 */}
-      <div className={`${sectionCard} bg-emerald-50`}>
-        <div className={sectionTitle}>체중 목표</div>
+      <div className="rounded-3xl border border-slate-100 bg-sky-50/60 p-6 md:p-7">
+        <div className="text-lg font-black text-slate-900 mb-5">체중 목표</div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label className={labelClass}>현재 체중 (kg)</label>
             <input
               type="number"
               className={inputClass}
               value={formData.currentWeight}
-              onChange={(e) => setFormData({ ...formData, currentWeight: safeNumber(e.target.value, 80) })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  currentWeight: clampNumber(Number(e.target.value), 0, 500),
+                })
+              }
             />
           </div>
+
           <div>
             <label className={labelClass}>목표 체중 (kg)</label>
             <input
               type="number"
               className={inputClass}
               value={formData.targetWeight}
-              onChange={(e) => setFormData({ ...formData, targetWeight: safeNumber(e.target.value, 65) })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  targetWeight: clampNumber(Number(e.target.value), 0, 500),
+                })
+              }
             />
           </div>
         </div>
       </div>
 
       {/* 투약 정보 */}
-      <div className={`${sectionCard} bg-blue-50`}>
-        <div className={sectionTitle}>투약 정보</div>
+      <div className="rounded-3xl border border-slate-100 bg-amber-50/60 p-6 md:p-7">
+        <div className="text-lg font-black text-slate-900 mb-5">투약 정보</div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* 투약 상태 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label className={labelClass}>투약 상태</label>
             <div className="flex gap-2">
@@ -273,11 +261,20 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
                 <button
                   key={s}
                   type="button"
-                  onClick={() => setFormData({ ...formData, drugStatus: s })}
-                  className={`flex-1 p-4 rounded-2xl font-black transition-all border ${
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      drugStatus: s,
+                      // 사용 전으로 바꾸면 주차/시작일 리셋
+                      ...(s === "사용 전"
+                        ? { startDate: "", currentWeek: 0, weekMode: "AUTO" as WeekMode }
+                        : {}),
+                    }))
+                  }
+                  className={`flex-1 px-4 py-3 rounded-2xl font-black transition-all border ${
                     formData.drugStatus === s
-                      ? "bg-slate-900 text-white border-slate-900"
-                      : "bg-white text-slate-500 border-slate-200"
+                      ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                      : "bg-white text-slate-600 border-slate-200"
                   }`}
                 >
                   {s}
@@ -286,13 +283,14 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
             </div>
           </div>
 
-          {/* 약물 선택 */}
           <div>
             <label className={labelClass}>약물 선택</label>
             <select
               className={inputClass}
               value={formData.drugType}
-              onChange={(e) => setFormData({ ...formData, drugType: e.target.value as DrugType })}
+              onChange={(e) =>
+                setFormData({ ...formData, drugType: e.target.value as DrugType })
+              }
             >
               <option value="MOUNJARO">마운자로</option>
               <option value="WEGOVY">위고비</option>
@@ -301,90 +299,98 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
         </div>
 
         {formData.drugStatus === "사용 중" && (
-          <div className="mt-2 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* 시작 체중 */}
-              <div>
-                <label className={labelClass}>투약 전 시작 체중 (kg)</label>
-                <input
-                  type="number"
-                  className={inputClass}
-                  value={formData.startWeightBeforeDrug}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startWeightBeforeDrug: safeNumber(e.target.value, formData.currentWeight) })
-                  }
-                />
-              </div>
-
-              {/* 용량 */}
-              <div>
-                <label className={labelClass}>현재 투약 용량</label>
-                <select
-                  className={inputClass}
-                  value={String(formData.currentDose)}
-                  onChange={(e) => setFormData({ ...formData, currentDose: safeNumber(e.target.value, doseOpts[0]) })}
-                >
-                  {doseOpts.map((d) => (
-                    <option key={d} value={String(d)}>
-                      {formatDoseMg(d)}
-                    </option>
-                  ))}
-                </select>
-                <div className="mt-2 text-xs text-slate-500">약물 기준으로 용량 단계를 선택하세요.</div>
-              </div>
+          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className={labelClass}>투약 전 시작 체중 (kg)</label>
+              <input
+                type="number"
+                className={inputClass}
+                value={formData.startWeightBeforeDrug}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    startWeightBeforeDrug: clampNumber(Number(e.target.value), 0, 500),
+                  })
+                }
+              />
             </div>
 
-            {/* 시작일/주차 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className={labelClass}>투약 시작일</label>
-                <input
-                  type="date"
-                  className={inputClass}
-                  value={formData.startDate || ""}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                />
-                <div className="mt-2 text-xs text-slate-500">시작일 기준으로 현재 주차를 자동 계산합니다.</div>
+            <div>
+              <label className={labelClass}>현재 투약 용량</label>
+              <select
+                className={inputClass}
+                value={String(formData.currentDose)}
+                onChange={(e) =>
+                  setFormData({ ...formData, currentDose: Number(e.target.value) })
+                }
+              >
+                {doseOptions.map((d) => (
+                  <option key={d} value={String(d)}>
+                    {d} mg
+                  </option>
+                ))}
+              </select>
+              <div className={helpClass}>약물 기준으로 용량 단계를 선택하세요.</div>
+            </div>
+
+            <div>
+              <label className={labelClass}>투약 시작일</label>
+              <input
+                type="date"
+                className={inputClass}
+                value={formData.startDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, startDate: e.target.value })
+                }
+              />
+              <div className={helpClass}>시작일 기준으로 현재 주차를 자동 계산합니다.</div>
+            </div>
+
+            <div>
+              <label className={labelClass}>현재 투약 주차</label>
+
+              <div className="flex gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, weekMode: "AUTO" })}
+                  className={`px-4 py-2 rounded-xl font-black border transition-all ${
+                    formData.weekMode === "AUTO"
+                      ? "bg-slate-900 text-white border-slate-900"
+                      : "bg-white text-slate-600 border-slate-200"
+                  }`}
+                >
+                  자동
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, weekMode: "MANUAL" })}
+                  className={`px-4 py-2 rounded-xl font-black border transition-all ${
+                    formData.weekMode === "MANUAL"
+                      ? "bg-slate-900 text-white border-slate-900"
+                      : "bg-white text-slate-600 border-slate-200"
+                  }`}
+                >
+                  수동
+                </button>
               </div>
 
-              <div>
-                <label className={labelClass}>현재 투약 주차</label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    className={`${inputClass} flex-1`}
-                    value={formData.currentWeek}
-                    onChange={(e) => setFormData({ ...formData, currentWeek: safeNumber(e.target.value, 0) })}
-                    disabled={formData.weekMode === "auto"}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, weekMode: "auto" })}
-                    className={`px-5 rounded-2xl font-black border ${
-                      formData.weekMode === "auto"
-                        ? "bg-slate-900 text-white border-slate-900"
-                        : "bg-white text-slate-600 border-slate-200"
-                    }`}
-                  >
-                    자동
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, weekMode: "manual" })}
-                    className={`px-5 rounded-2xl font-black border ${
-                      formData.weekMode === "manual"
-                        ? "bg-slate-900 text-white border-slate-900"
-                        : "bg-white text-slate-600 border-slate-200"
-                    }`}
-                  >
-                    수동
-                  </button>
-                </div>
-                <div className="mt-2 text-xs text-slate-500">
-                  {formData.weekMode === "auto"
-                    ? `자동 계산값: ${formData.currentWeek}주차 (필요하면 수동으로 보정하세요)`
-                    : "수동 입력 모드입니다. 실제 주차에 맞게 조정하세요."}
-                </div>
+              <input
+                type="number"
+                className={inputClass}
+                value={formData.currentWeek}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    currentWeek: clampNumber(Number(e.target.value), 0, 500),
+                  })
+                }
+                disabled={formData.weekMode === "AUTO"}
+              />
+
+              <div className={helpClass}>
+                {formData.weekMode === "AUTO"
+                  ? `자동 계산값: ${calcWeekFromStartDate(formData.startDate || undefined)}주차 (필요하면 수동으로 전환해 보정하세요)`
+                  : "주차를 직접 입력합니다. 시작일과 맞지 않아도 됩니다."}
               </div>
             </div>
           </div>
@@ -392,31 +398,36 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
       </div>
 
       {/* 고민 */}
-      <div className={`${sectionCard} bg-amber-50`}>
-        <div className={sectionTitle}>고민</div>
+      <div className="rounded-3xl border border-slate-100 bg-rose-50/60 p-6 md:p-7">
+        <div className="text-lg font-black text-slate-900 mb-5">고민</div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label className={labelClass}>다이어트에서 가장 큰 고민</label>
             <select
               className={inputClass}
               value={formData.mainConcern}
-              onChange={(e) => setFormData({ ...formData, mainConcern: e.target.value as any })}
+              onChange={(e) =>
+                setFormData({ ...formData, mainConcern: e.target.value })
+              }
             >
-              <option value="요요">요요</option>
-              <option value="근감소">근감소</option>
-              <option value="비용">비용</option>
-              <option value="부작용">부작용</option>
+              <option>요요</option>
+              <option>근감소</option>
+              <option>비용</option>
+              <option>부작용</option>
             </select>
           </div>
 
           <div>
             <label className={labelClass}>다이어트 각오</label>
             <textarea
-              className={`${inputClass} min-h-[96px]`}
-              placeholder="예: 이번에는 요요 없이 성공하겠습니다."
+              className={inputClass}
+              rows={3}
               value={formData.resolution}
-              onChange={(e) => setFormData({ ...formData, resolution: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, resolution: e.target.value })
+              }
+              placeholder="예: 이번에는 요요 없이 성공하겠습니다."
             />
           </div>
         </div>
@@ -424,7 +435,7 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: any)
 
       <button
         type="submit"
-        className="w-full py-6 bg-slate-900 text-white font-black text-lg rounded-[22px] shadow-xl hover:bg-slate-800 transition-all"
+        className="w-full py-5 bg-slate-900 text-white font-black text-lg rounded-2xl shadow-lg hover:bg-slate-800 transition-all"
       >
         무료 로드맵 생성
       </button>
