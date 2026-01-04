@@ -352,7 +352,7 @@ const weekSegments = [
                 <div className="text-sm text-slate-500">현재 용량 가이드</div>
                 <div className="mt-1 text-lg text-slate-900">{selectedDoseGuide.drug} {selectedDoseGuide.dose} mg</div>
                 <div className="mt-3 text-sm text-slate-700">
-                  <div>권장 유지 기간: {selectedDoseGuide.keep}</div>
+                 <div>권장 유지 기간: {selectedDoseGuide.dur}</div>
                   <div className="mt-1">Action Item: {selectedDoseGuide.action}</div>
                 </div>
               </div>
