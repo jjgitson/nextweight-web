@@ -48,6 +48,29 @@ export interface AnalysisResult {
   p: string;
   s: string;
 
+  // UI에서 구간 표시/마커에 사용하는 메타
+  userWeek: number;
+  goalWeek: number;
+  drugEndWeek: number;
+  phases: Array<{
+    key: StageKey;
+    label: string; // 예: 적응기
+    visualName: string; // 예: 몸의 변화 인지
+    start: number;
+    end: number;
+    color: string;
+    message: string;
+  }>;
+
+  // RoadmapChart 호환용 (과거 버전에서 사용)
+  currentStage?: {
+    start: number;
+    end: number;
+    name: string;
+    color: string;
+    msg: string;
+  };
+
   chart: {
     weeks: number[];
     userSeries: number[];
@@ -168,6 +191,106 @@ function estimateGoalWeek(currentWeight: number, targetWeight: number, avgWeekly
   return Math.max(4, Math.ceil(weeks));
 }
 
+function fillTemplate(template: string, vars: Record<string, string>) {
+  return template.replace(/\{(\w+)\}/g, (_, k) => (vars[k] != null ? vars[k] : `{${k}}`));
+}
+
+function computeGoalWeekFromSeries(currentWeight: number, targetWeight: number, weeks: number[], userSeriesPct: number[]) {
+  const len = Math.min(weeks.length, userSeriesPct.length);
+  if (!len) return estimateGoalWeek(currentWeight, targetWeight);
+
+  for (let i = 0; i < len; i++) {
+    const w = weeks[i];
+    const pct = userSeriesPct[i];
+    const predicted = currentWeight * (1 + pct / 100);
+    if (Number.isFinite(predicted) && predicted <= targetWeight) return Math.max(4, Math.floor(w));
+  }
+
+  // 도달하지 못하면 기존 추정치로
+  return estimateGoalWeek(currentWeight, targetWeight);
+}
+
+function buildPhases(args: {
+  drugStatus: DrugStatus;
+  drugType: DrugType;
+  budget: BudgetTier;
+  userWeek: number;
+  goalWeek: number;
+  drugEndWeek: number;
+}) {
+  const { drugStatus, drugType, budget, userWeek, goalWeek, drugEndWeek } = args;
+
+  // 기본: 투약 전이라도 구간 표시를 유지하되, 전환점은 userWeek 중심으로 최소한만 보여줌
+  const bridgeStart = Math.max(0, goalWeek - 8);
+  const lossEnd = Math.max(5, bridgeStart);
+  const maintainEnd = drugEndWeek + 12;
+
+  const drugLabel = drugType === "MOUNJARO" ? "터제타파이드" : "위고비";
+  const vars = { drugType: drugLabel, budget };
+
+  const templates = {
+    ADAPT: "현재 {drugType}에 적응 중입니다. 수분 2L 섭취로 부작용을 관리하세요.",
+    LOSS: drugType === "MOUNJARO"
+      ? "감량 속도가 빠릅니다. 터제타파이드의 효과를 근육 자산으로 전환할 때입니다."
+      : "감량 속도가 빠릅니다. 위고비의 효과를 근육 자산으로 전환할 때입니다.",
+    BRIDGE: "약물 농도가 낮아집니다. {budget} 전략에 따른 저항성 운동이 핵심입니다!",
+    MAINTAIN: "축하합니다! 이제 스스로 에너지를 태우는 건강한 대사 체계가 안착되었습니다.",
+  } as const;
+
+  const phases = [
+    {
+      key: "ADAPT" as const,
+      label: "적응기",
+      visualName: "몸의 변화 인지",
+      start: 0,
+      end: 4,
+      color: "#3B82F6",
+      message: fillTemplate(templates.ADAPT, vars),
+    },
+    {
+      key: "LOSS" as const,
+      label: "감량기",
+      visualName: "체지방 연소 피크",
+      start: 5,
+      end: lossEnd,
+      color: "#10B981",
+      message: fillTemplate(templates.LOSS, vars),
+    },
+    {
+      key: "BRIDGE" as const,
+      label: "가교기",
+      visualName: "대사 전환 엔진 가동",
+      start: bridgeStart,
+      end: drugEndWeek,
+      color: "#F59E0B",
+      message: fillTemplate(templates.BRIDGE, vars),
+    },
+    {
+      key: "MAINTAIN" as const,
+      label: "유지기",
+      visualName: "요요 방어선 완성",
+      start: drugEndWeek,
+      end: maintainEnd,
+      color: "#8B5CF6",
+      message: fillTemplate(templates.MAINTAIN, vars),
+    },
+  ];
+
+  // 투약 전이면 가교/유지 표시가 과도할 수 있어, chart 길이에 맞춰서 최소 범위를 보장
+  if (drugStatus === "PRE") {
+    // 목표 주차를 userWeek 기준으로만 좁혀 UI가 과장되지 않게
+    const preGoal = Math.max(4, Math.ceil(userWeek + 12));
+    const preBridgeStart = Math.max(0, preGoal - 8);
+    phases[1].end = Math.max(5, preBridgeStart);
+    phases[2].start = preBridgeStart;
+    phases[2].end = preGoal;
+    phases[3].start = preGoal;
+    phases[3].end = preGoal + 12;
+  }
+
+  return phases;
+}
+
 function computePercentileText(userData: UserData): string {
   // 단순 규칙 기반 (현재는 UI 문구용)
   const w = Math.max(1, Math.floor(userData.currentWeek));
@@ -189,11 +312,7 @@ function computeHeadlineQuote(stageKey: StageKey, drugType: DrugType): string {
 }
 
 export function generatePersonalizedAnalysis(userData: UserData): AnalysisResult {
-  const goalWeek = estimateGoalWeek(userData.currentWeight, userData.targetWeight);
   const userWeek = Math.max(0, Math.floor(userData.currentWeek || 0));
-  const remainingToGoalWeek = Math.max(0, goalWeek - userWeek);
-
-  const stage = computeStage(userWeek, remainingToGoalWeek, userData.drugStatus);
   const percentileText = computePercentileText(userData);
 
   const drugLabel = userData.drugType === "MOUNJARO" ? "터제타파이드" : "위고비";
@@ -204,13 +323,13 @@ export function generatePersonalizedAnalysis(userData: UserData): AnalysisResult
   const s = userData.exercise === "안 함" ? "안 함" : userData.exercise;
 
   const clinicalCurve = pickClinicalCurve(userData.drugType, userData.currentDose);
-  const horizon = Math.max(72, userWeek);
-  const clinicalWeekly = buildWeeklySeries(clinicalCurve, Math.min(horizon, 72));
+  const horizonBase = Math.max(72, userWeek);
+  const clinicalWeekly = buildWeeklySeries(clinicalCurve, Math.min(horizonBase, 72));
 
   // 72주 이후는 72주 값을 유지
   const weeks: number[] = [];
   const clinicalSeries: number[] = [];
-  for (let w = 0; w <= horizon; w++) {
+  for (let w = 0; w <= horizonBase; w++) {
     weeks.push(w);
     if (w <= 72) clinicalSeries.push(clinicalWeekly.values[w]);
     else clinicalSeries.push(clinicalWeekly.values[72]);
@@ -223,8 +342,41 @@ export function generatePersonalizedAnalysis(userData: UserData): AnalysisResult
 
   const userSeries = clinicalSeries.map((v) => v * adjMuscle * adjExercise * adjBudget);
 
+  // 목표 도달 주차를 예측 곡선 기반으로 산출
+  const goalWeek = computeGoalWeekFromSeries(userData.currentWeight, userData.targetWeight, weeks, userSeries);
+
+  // 기본 가정: 목표 도달 시점에 투약 종료 (온보딩에 별도 값이 없으므로)
+  const drugEndWeek = Math.max(userWeek, goalWeek);
+
+  // 구간을 포함하도록 차트 길이를 늘림 (유지기 +12주까지)
+  const horizon = Math.max(horizonBase, drugEndWeek + 12);
+  if (horizon > horizonBase) {
+    for (let w = horizonBase + 1; w <= horizon; w++) {
+      weeks.push(w);
+      // 72주 이후는 임상값 고정
+      const baseClinical = w <= 72 ? clinicalWeekly.values[w] : clinicalWeekly.values[72];
+      clinicalSeries.push(baseClinical);
+      userSeries.push(baseClinical * adjMuscle * adjExercise * adjBudget);
+    }
+  }
+
+  const remainingToGoalWeek = Math.max(0, goalWeek - userWeek);
+  const stage = computeStage(userWeek, remainingToGoalWeek, userData.drugStatus);
+
   const lastWeek = weeks[weeks.length - 1];
   const lastValue = userSeries[userSeries.length - 1];
+
+  const phases = buildPhases({
+    drugStatus: userData.drugStatus,
+    drugType: userData.drugType,
+    budget: userData.budget,
+    userWeek,
+    goalWeek,
+    drugEndWeek,
+  });
+
+  // 현재 주차가 속한 구간을 currentStage로 제공 (RoadmapChart 하이라이트 호환)
+  const currentPhase = phases.find((p) => userWeek >= p.start && userWeek <= p.end) || phases[0];
 
   return {
     stage,
@@ -233,6 +385,17 @@ export function generatePersonalizedAnalysis(userData: UserData): AnalysisResult
     g,
     p,
     s,
+    userWeek,
+    goalWeek,
+    drugEndWeek,
+    phases,
+    currentStage: {
+      start: currentPhase.start,
+      end: currentPhase.end,
+      name: currentPhase.label,
+      color: currentPhase.color,
+      msg: currentPhase.message,
+    },
     chart: {
       weeks,
       userSeries,

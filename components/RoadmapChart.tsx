@@ -9,6 +9,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceArea,
+  ReferenceLine,
+  Label,
 } from "recharts";
 
 type Stage = {
@@ -36,6 +38,20 @@ type AnalysisLike = {
 
   // stage 정보
   currentStage?: Stage;
+
+  // phase 표시(신규)
+  phases?: Array<{
+    key?: string;
+    label?: string;
+    visualName?: string;
+    start: number;
+    end: number;
+    color?: string;
+    message?: string;
+  }>;
+
+  // 현재 주차 마커(신규)
+  userWeek?: number;
 
   // 최신 엔진(roadmap-engine.ts) 형태
   chart?: {
@@ -100,6 +116,38 @@ export default React.memo(function RoadmapChart({ analysis }: { analysis: Analys
     };
   }, [analysis]);
 
+  const phases = useMemo(() => {
+    if (!Array.isArray(analysis?.phases)) return [];
+    return analysis.phases
+      .filter((p) => typeof p?.start === "number" && typeof p?.end === "number")
+      .map((p) => ({
+        start: p.start,
+        end: p.end,
+        label: p.label || "",
+        visualName: p.visualName || "",
+        color: p.color || "#94a3b8",
+        message: p.message || "",
+      }))
+      .sort((a, b) => a.start - b.start);
+  }, [analysis]);
+
+  const userWeek = useMemo(() => {
+    const w = (analysis as any)?.userWeek;
+    return typeof w === "number" && Number.isFinite(w) ? w : null;
+  }, [analysis]);
+
+  const maxWeek = useMemo(() => {
+    const last = chartData[chartData.length - 1];
+    return last?.week ?? 0;
+  }, [chartData]);
+
+  const findPhase = (week: number) => {
+    for (const p of phases) {
+      if (week >= p.start && week <= p.end) return p;
+    }
+    return null;
+  };
+
   if (!chartData.length) {
     return <div className="text-sm text-slate-500">차트 데이터를 불러올 수 없습니다.</div>;
   }
@@ -110,10 +158,63 @@ export default React.memo(function RoadmapChart({ analysis }: { analysis: Analys
         <LineChart data={chartData}>
           <XAxis dataKey="week" tick={{ fontSize: 11 }} />
           <YAxis domain={[-25, 0]} tick={{ fontSize: 11 }} />
+
           <Tooltip
-            formatter={(v: any) => `${clampNumber(v, 0).toFixed(1)}%`}
-            labelFormatter={(l: any) => `${l}주차`}
+            content={({ active, label, payload }: any) => {
+              if (!active || !payload?.length) return null;
+              const week = clampNumber(label, 0);
+              const v = clampNumber(payload?.[0]?.value, 0);
+              const ph = findPhase(week);
+
+              return (
+                <div className="rounded-lg border bg-white px-3 py-2 shadow-sm">
+                  <div className="text-xs text-slate-600">{week}주차</div>
+                  <div className="mt-1 text-sm text-slate-900">예측 변화: {v.toFixed(1)}%</div>
+                  {ph && (ph.label || ph.visualName) ? (
+                    <div className="mt-2">
+                      <div className="text-xs text-slate-600">
+                        {ph.label}{ph.visualName ? ` · ${ph.visualName}` : ""}
+                      </div>
+                      {ph.message ? <div className="mt-1 text-xs text-slate-700">{ph.message}</div> : null}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            }}
           />
+
+          {/* Phase bands */}
+          {phases.map((p, idx) => {
+            // 차트 범위를 크게 벗어나는 구간은 생략
+            const x1 = Math.max(0, p.start);
+            const x2 = Math.min(maxWeek, p.end);
+            if (x2 <= x1) return null;
+            return (
+              <ReferenceArea
+                key={`phase-${idx}`}
+                x1={x1}
+                x2={x2}
+                fill={p.color}
+                fillOpacity={0.06}
+                ifOverflow="extendDomain"
+                label={
+                  p.label ? (
+                    <Label value={p.label} position="insideBottom" offset={12} style={{ fontSize: 11 }} />
+                  ) : undefined
+                }
+              />
+            );
+          })}
+
+          {/* Current week marker */}
+          {userWeek != null ? (
+            <ReferenceLine
+              x={userWeek}
+              stroke="#0f172a"
+              strokeDasharray="3 3"
+              label={<Label value="현재" position="insideTop" offset={10} style={{ fontSize: 11 }} />}
+            />
+          ) : null}
 
           {stage && (
             <ReferenceArea
