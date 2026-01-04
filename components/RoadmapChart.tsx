@@ -37,6 +37,13 @@ type AnalysisLike = {
   // stage 정보
   currentStage?: Stage;
 
+  // 최신 엔진(roadmap-engine.ts) 형태
+  chart?: {
+    weeks?: number[];
+    userSeries?: number[];
+    clinicalSeries?: number[];
+  };
+
   // 다른 필드가 있어도 무시
   [key: string]: any;
 };
@@ -48,13 +55,21 @@ function clampNumber(v: any, fallback = 0) {
 
 export default React.memo(function RoadmapChart({ analysis }: { analysis: AnalysisLike }) {
   const chartData: ChartPoint[] = useMemo(() => {
-    const weeks = Array.isArray(analysis?.weeks) ? analysis.weeks : [];
-    const series =
+    // 1) 최신 엔진: analysis.chart.weeks / analysis.chart.userSeries
+    const weeksFromChart = Array.isArray(analysis?.chart?.weeks) ? analysis.chart!.weeks! : [];
+    const seriesFromChart = Array.isArray(analysis?.chart?.userSeries) ? analysis.chart!.userSeries! : [];
+
+    // 2) 구버전/호환: analysis.weeks / analysis.userLossPctSeries / analysis.userLossPct
+    const weeksFromTop = Array.isArray(analysis?.weeks) ? analysis.weeks : [];
+    const seriesFromTop =
       Array.isArray(analysis?.userLossPctSeries)
         ? analysis.userLossPctSeries
         : Array.isArray(analysis?.userLossPct)
           ? analysis.userLossPct
           : [];
+
+    const weeks = weeksFromChart.length ? weeksFromChart : weeksFromTop;
+    const series = seriesFromChart.length ? seriesFromChart : seriesFromTop;
 
     if (!weeks.length || !series.length) return [];
 

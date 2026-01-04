@@ -28,8 +28,17 @@ export default async function ResultsPage({
     currentWeight: safeNumber(sp.get("currentWeight"), 80),
     targetWeight: safeNumber(sp.get("targetWeight"), 65),
 
-    drugStatus: (sp.get("drugStatus") as any) || "PRE",
-    drugType: (sp.get("drugType") as any) || "MOUNJARO",
+    // onboarding/UI에서는 한글 값이 올 수도 있어 안전하게 매핑
+    drugStatus:
+      (sp.get("drugStatus") as any) === "사용 중"
+        ? "ON"
+        : (sp.get("drugStatus") as any) === "사용 전"
+          ? "PRE"
+          : ((sp.get("drugStatus") as any) || "PRE"),
+    drugType:
+      (sp.get("drugType") as any) === "NONE"
+        ? "MOUNJARO"
+        : ((sp.get("drugType") as any) || "MOUNJARO"),
     startWeightBeforeDrug: safeNumber(sp.get("startWeightBeforeDrug"), safeNumber(sp.get("currentWeight"), 80)),
 
     currentDose: sp.get("currentDose") || undefined,
