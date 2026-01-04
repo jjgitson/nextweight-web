@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
   ReferenceArea,
   ReferenceLine,
+  ReferenceDot,
   Label,
 } from "recharts";
 
@@ -25,7 +26,7 @@ type Stage = {
 
 type ChartPoint = {
   week: number;
-  value: number;
+  avg: number;
 };
 
 type AnalysisLike = {
@@ -73,7 +74,8 @@ export default React.memo(function RoadmapChart({ analysis }: { analysis: Analys
   const chartData: ChartPoint[] = useMemo(() => {
     // 1) 최신 엔진: analysis.chart.weeks / analysis.chart.userSeries
     const weeksFromChart = Array.isArray(analysis?.chart?.weeks) ? analysis.chart!.weeks! : [];
-    const seriesFromChart = Array.isArray(analysis?.chart?.userSeries) ? analysis.chart!.userSeries! : [];
+    // 기준선은 임상 평균(클리니컬)입니다.
+    const seriesFromChart = Array.isArray(analysis?.chart?.clinicalSeries) ? analysis.chart!.clinicalSeries! : [];
 
     // 2) 구버전/호환: analysis.weeks / analysis.userLossPctSeries / analysis.userLossPct
     const weeksFromTop = Array.isArray(analysis?.weeks) ? analysis.weeks : [];
@@ -94,7 +96,7 @@ export default React.memo(function RoadmapChart({ analysis }: { analysis: Analys
     for (let i = 0; i < len; i++) {
       pts.push({
         week: clampNumber(weeks[i], 0),
-        value: clampNumber(series[i], 0),
+        avg: clampNumber(series[i], 0),
       });
     }
     return pts;
@@ -136,6 +138,11 @@ export default React.memo(function RoadmapChart({ analysis }: { analysis: Analys
     return typeof w === "number" && Number.isFinite(w) ? w : null;
   }, [analysis]);
 
+  const userLossPctNow = useMemo(() => {
+    const v = (analysis as any)?.userLossPctNow;
+    return typeof v === "number" && Number.isFinite(v) ? v : null;
+  }, [analysis]);
+
   const maxWeek = useMemo(() => {
     const last = chartData[chartData.length - 1];
     return last?.week ?? 0;
@@ -169,7 +176,10 @@ export default React.memo(function RoadmapChart({ analysis }: { analysis: Analys
               return (
                 <div className="rounded-lg border bg-white px-3 py-2 shadow-sm">
                   <div className="text-xs text-slate-600">{week}주차</div>
-                  <div className="mt-1 text-sm text-slate-900">예측 변화: {v.toFixed(1)}%</div>
+                  <div className="mt-1 text-sm text-slate-900">임상 평균 변화: {v.toFixed(1)}%</div>
+                  {userWeek != null && userLossPctNow != null && week === userWeek ? (
+                    <div className="mt-1 text-sm text-slate-900">내 현재 위치: {userLossPctNow.toFixed(1)}%</div>
+                  ) : null}
                   {ph && (ph.label || ph.visualName) ? (
                     <div className="mt-2">
                       <div className="text-xs text-slate-600">
@@ -227,12 +237,25 @@ export default React.memo(function RoadmapChart({ analysis }: { analysis: Analys
 
           <Line
             type="monotone"
-            dataKey="value"
+            dataKey="avg"
             stroke="#0f172a"
             strokeWidth={2.5}
             dot={false}
             isAnimationActive={false}
           />
+
+          {/* User current dot (actual weight-based) */}
+          {userWeek != null && userLossPctNow != null ? (
+            <ReferenceDot
+              x={userWeek}
+              y={userLossPctNow}
+              r={5}
+              fill="#0f172a"
+              stroke="#ffffff"
+              strokeWidth={2}
+              ifOverflow="extendDomain"
+            />
+          ) : null}
         </LineChart>
       </ResponsiveContainer>
 

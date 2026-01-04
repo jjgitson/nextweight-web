@@ -65,6 +65,8 @@ function doseOptions(drugType: DrugType) {
 export default function OnboardingForm({ onComplete }: { onComplete: (data: FormData) => void }) {
   const today = useMemo(() => yyyyMmDd(new Date()), []);
 
+  const [formError, setFormError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState<FormData>({
     userName: "",
     userAge: 35,
@@ -120,15 +122,31 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: Form
   }, [formData.startDate, formData.weekMode, formData.currentWeek]);
 
   const showDrugFields = formData.drugStatus === "사용 중";
+  const requireStartWeight = showDrugFields && formData.drugType !== "NONE";
 
   return (
     <form
       className="space-y-6"
       onSubmit={(e) => {
         e.preventDefault();
+        setFormError(null);
+
+        // 사용 중(ON)일 때, 투약 전 시작 체중은 '현재 위치(dot)' 계산에 필수
+        if (requireStartWeight) {
+          const w = formData.startWeightBeforeDrug;
+          if (typeof w !== "number" || !Number.isFinite(w) || w <= 0) {
+            setFormError("사용 중일 때는 투약 전 시작 체중(kg)을 입력해 주세요.");
+            return;
+          }
+        }
         onComplete(formData);
       }}
     >
+      {formError ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-[14px] text-rose-700">
+          {formError}
+        </div>
+      ) : null}
       {/* 기본 정보 */}
       <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-6 md:p-8">
         <div className="mb-5 text-[18px] font-black text-slate-900">기본 정보</div>
@@ -315,6 +333,11 @@ export default function OnboardingForm({ onComplete }: { onComplete: (data: Form
                   step={0.1}
                   placeholder="예: 104"
                 />
+                {requireStartWeight ? (
+                  <div className="mt-2 text-[12px] leading-5 text-slate-500">
+                    현재 체중 위치(dot)와 평균 대비 격차 계산에 필요합니다.
+                  </div>
+                ) : null}
               </div>
 
               <div>

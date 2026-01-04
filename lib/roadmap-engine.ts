@@ -78,6 +78,11 @@ export interface AnalysisResult {
     lastValue: number;
     lastWeek: number;
   };
+
+  // 임상 평균 대비 현재 위치(실제 체중 기반)
+  userLossPctNow: number;
+  expectedLossPctAtWeek: number;
+  deltaVsAveragePp: number;
 }
 
 type Curve = { name: string; weeks: readonly number[]; values: readonly number[] };
@@ -291,17 +296,12 @@ function buildPhases(args: {
   return phases;
 }
 
-function computePercentileText(userData: UserData): string {
-  // 단순 규칙 기반 (현재는 UI 문구용)
-  const w = Math.max(1, Math.floor(userData.currentWeek));
-  const base = userData.drugType === "MOUNJARO" ? 50 : 45;
-  const adjBudget = userData.budget === "집중형" ? 10 : userData.budget === "표준형" ? 5 : 0;
-  const adjExercise = userData.exercise === "주 3회 이상" ? 8 : userData.exercise === "주 1~2회" ? 4 : 0;
-  const adjMuscle = userData.muscleMass === "이하" ? -6 : userData.muscleMass === "이상" ? 4 : 0;
-
-  const p = Math.max(1, Math.min(99, Math.round(base + adjBudget + adjExercise + adjMuscle - Math.min(20, w * 0.2))));
-  const label = userData.drugType === "MOUNJARO" ? "터제타파이드" : "위고비";
-  return `동일 주차 기준, ${label} 평균 대비 ${p}%p ${p >= 50 ? "위" : "아래"}`;
+function computeCompareText(drugType: DrugType, deltaVsAveragePp: number): string {
+  const label = drugType === "MOUNJARO" ? "마운자로" : "위고비";
+  const abs = Math.abs(deltaVsAveragePp);
+  const v = Number.isFinite(abs) ? abs : 0;
+  const txt = deltaVsAveragePp < 0 ? "아래" : "위";
+  return `동일 주차 기준, ${label} 평균 대비 ${v.toFixed(0)}%p ${txt}`;
 }
 
 function computeHeadlineQuote(stageKey: StageKey, drugType: DrugType): string {
@@ -313,7 +313,6 @@ function computeHeadlineQuote(stageKey: StageKey, drugType: DrugType): string {
 
 export function generatePersonalizedAnalysis(userData: UserData): AnalysisResult {
   const userWeek = Math.max(0, Math.floor(userData.currentWeek || 0));
-  const percentileText = computePercentileText(userData);
 
   const drugLabel = userData.drugType === "MOUNJARO" ? "터제타파이드" : "위고비";
   const dose = userData.currentDose ? `${userData.currentDose}` : "0mg";
@@ -341,6 +340,19 @@ export function generatePersonalizedAnalysis(userData: UserData): AnalysisResult
   const adjBudget = userData.budget === "집중형" ? 1.05 : userData.budget === "표준형" ? 1.02 : 0.98;
 
   const userSeries = clinicalSeries.map((v) => v * adjMuscle * adjExercise * adjBudget);
+
+  // 사용자 현재 위치(dot): 실제 체중 기반
+  // ON일 때 startWeightBeforeDrug가 보장된다는 전제(온보딩/결과 페이지에서 검증)
+  const startWeight =
+    userData.drugStatus === "ON" && typeof userData.startWeightBeforeDrug === "number" && userData.startWeightBeforeDrug > 0
+      ? userData.startWeightBeforeDrug
+      : userData.currentWeight;
+  const userLossPctNow = ((userData.currentWeight - startWeight) / startWeight) * 100;
+
+  // 동일 주차 임상 평균(기준선)
+  const expectedLossPctAtWeek = clinicalSeries[Math.min(userWeek, clinicalSeries.length - 1)] ?? 0;
+  const deltaVsAveragePp = userLossPctNow - expectedLossPctAtWeek;
+  const percentileText = computeCompareText(userData.drugType, deltaVsAveragePp);
 
   // 목표 도달 주차를 예측 곡선 기반으로 산출
   const goalWeek = computeGoalWeekFromSeries(userData.currentWeight, userData.targetWeight, weeks, userSeries);
@@ -403,5 +415,9 @@ export function generatePersonalizedAnalysis(userData: UserData): AnalysisResult
       lastValue,
       lastWeek,
     },
+
+    userLossPctNow,
+    expectedLossPctAtWeek,
+    deltaVsAveragePp,
   };
 }

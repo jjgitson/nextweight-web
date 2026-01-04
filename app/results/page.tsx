@@ -20,6 +20,35 @@ export default async function ResultsPage({
     } else if (v != null) sp.set(k, v);
   }
 
+  const rawDrugStatus = sp.get("drugStatus") as any;
+  const rawDrugType = sp.get("drugType") as any;
+  const mappedDrugStatus: any =
+    rawDrugStatus === "사용 중" ? "ON" : rawDrugStatus === "사용 전" ? "PRE" : (rawDrugStatus || "PRE");
+  const mappedDrugType: any = rawDrugType === "NONE" ? "MOUNJARO" : (rawDrugType || "MOUNJARO");
+
+  const requireStartWeight = mappedDrugStatus === "ON" && rawDrugType !== "NONE";
+  const rawStartWeight = sp.get("startWeightBeforeDrug");
+  const parsedStartWeight = rawStartWeight == null || rawStartWeight === "" ? NaN : Number(rawStartWeight);
+  if (requireStartWeight && !(Number.isFinite(parsedStartWeight) && parsedStartWeight > 0)) {
+    return (
+      <main className="min-h-screen bg-slate-50">
+        <div className="mx-auto max-w-2xl px-4 py-10">
+          <section className="rounded-2xl bg-white shadow-sm border p-6">
+            <div className="text-xl font-semibold text-slate-900">입력값이 부족합니다</div>
+            <div className="mt-2 text-slate-700">
+              사용 중일 때는 투약 전 시작 체중(kg)이 필요합니다. 해당 값이 없으면 현재 위치(dot)와 평균 대비 격차를 계산할 수 없습니다.
+            </div>
+            <div className="mt-5">
+              <a href="/" className="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-white">
+                다시 입력하기
+              </a>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   const userData: UserData = {
     userName: sp.get("userName") || undefined,
     userAge: safeNumber(sp.get("userAge"), 35),
@@ -29,17 +58,11 @@ export default async function ResultsPage({
     targetWeight: safeNumber(sp.get("targetWeight"), 65),
 
     // onboarding/UI에서는 한글 값이 올 수도 있어 안전하게 매핑
-    drugStatus:
-      (sp.get("drugStatus") as any) === "사용 중"
-        ? "ON"
-        : (sp.get("drugStatus") as any) === "사용 전"
-          ? "PRE"
-          : ((sp.get("drugStatus") as any) || "PRE"),
-    drugType:
-      (sp.get("drugType") as any) === "NONE"
-        ? "MOUNJARO"
-        : ((sp.get("drugType") as any) || "MOUNJARO"),
-    startWeightBeforeDrug: safeNumber(sp.get("startWeightBeforeDrug"), safeNumber(sp.get("currentWeight"), 80)),
+    drugStatus: mappedDrugStatus,
+    drugType: mappedDrugType,
+    startWeightBeforeDrug: requireStartWeight
+      ? safeNumber(sp.get("startWeightBeforeDrug"), safeNumber(sp.get("currentWeight"), 80))
+      : undefined,
 
     currentDose: sp.get("currentDose") || undefined,
     currentWeek: safeNumber(sp.get("currentWeek"), 1),

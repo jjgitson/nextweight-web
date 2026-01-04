@@ -20,12 +20,12 @@ function toQuery(data: any) {
   // 투약 정보
   // 내부 엔진 표준 값으로 변환
   // - drugStatus: "사용 전"|"사용 중" -> "PRE"|"ON"
-  // - drugType: "NONE"는 안전하게 제외(=results에서 기본값 적용)
+  // - drugType: "NONE"도 명시해 두어 results에서 검증 로직(시작 체중 필요 여부)을 정확히 판단할 수 있게 함
   if (data.drugStatus) {
     const v = String(data.drugStatus);
     sp.set("drugStatus", v === "사용 중" ? "ON" : v === "사용 전" ? "PRE" : v);
   }
-  if (data.drugType && String(data.drugType) !== "NONE") sp.set("drugType", String(data.drugType));
+  if (data.drugType) sp.set("drugType", String(data.drugType));
 
   // 이 키가 results/page.tsx에서 사용됩니다
   if (data.startWeightBeforeDrug !== undefined && data.startWeightBeforeDrug !== null) {
