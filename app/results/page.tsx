@@ -186,7 +186,68 @@ export default async function ResultsPage({
     { when: "1~2주 차", name: "적응기 고비", desc: "울렁거림이나 무기력증이 올 수 있습니다. 소량씩 자주 먹는 전략이 필요합니다." },
     { when: "8~12주 차", name: "첫 번째 정체기", desc: "몸이 바뀐 체중에 적응하며 감량이 더뎌집니다. 이때 포기하지 않는 것이 '유료 관리'의 핵심 지점입니다." },
     { when: "투약 종료 전후", name: "리바운드 주의보", desc: "약물 농도가 떨어지며 억제됐던 허기가 몰려옵니다. 이때 HMB 등 대사 가교 전략이 승부처입니다." },
-  ];
+  
+  const selectedBudget = budgetTable.find((x) => x.tier === userData.budget) || null;
+
+  const stageName = analysis?.currentStage?.name || "";
+  const mappedStatusForGuide =
+    userData.drugStatus === "PRE"
+      ? "투약 전"
+      : stageName === "가교기"
+        ? "테이퍼링기"
+        : stageName === "유지기"
+          ? "중단 후"
+          : "증량/유지기";
+
+  const selectedStageGuide = stageTable.find((x) => x.status === mappedStatusForGuide) || null;
+
+  const parseDoseMg = (s?: string) => {
+    if (!s) return null;
+    const m = String(s).match(/([0-9]+(?:\.[0-9]+)?)/);
+    if (!m) return null;
+    const v = Number(m[1]);
+    return Number.isFinite(v) ? v : null;
+  };
+
+  const doseMg = parseDoseMg(userData.currentDose);
+  const drugLabel = userData.drugType === "MOUNJARO" ? "마운자로" : "위고비";
+
+  const selectedDoseGuide =
+    doseMg != null
+      ? doseTable.find((x) => x.drug === drugLabel && Math.abs(Number(x.dose) - doseMg) < 0.001) || null
+      : null;
+
+  const selectedWeekSegment = (() => {
+    const w = userData.currentWeek;
+    if (w <= 2) return weekSegments[0] || null;
+    if (w <= 6) return weekSegments[1] || null;
+    if (w <= 12) return weekSegments[2] || null;
+    return weekSegments[3] || null;
+  })();
+
+  const selectedTrigger = (() => {
+    const lossKg = Math.max(0, (userData.currentWeight || 0) - (userData.targetWeight || 0));
+    if (userData.budget === "실속형" && userData.drugType === "MOUNJARO") {
+      return triggers.find((t) => t.when.includes("실속형") && t.when.includes("터제타파이드")) || null;
+    }
+    if (userData.budget === "표준형" && userData.muscleMass === "이하") {
+      return triggers.find((t) => t.when.includes("표준형") && t.when.includes("골격근")) || null;
+    }
+    if (userData.drugStatus === "PRE" && lossKg > 10) {
+      return triggers.find((t) => t.when.includes("투약 전") && t.when.includes("10kg")) || null;
+    }
+    return null;
+  })();
+
+  const rulesToShow = rules;
+
+  const pitfallsToShow = (() => {
+    const w = userData.currentWeek;
+    if (w <= 2) return [pitfalls[0]].filter(Boolean);
+    if (w <= 12) return [pitfalls[1]].filter(Boolean);
+    return [pitfalls[2]].filter(Boolean);
+  })();
+];
 
   const userMeta = [
     { k: "이름", v: userData.userName || "미입력" },
@@ -205,42 +266,13 @@ export default async function ResultsPage({
     <main className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
         <section className="rounded-2xl bg-white shadow-sm border p-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
-                  {analysis.stage.title}
-                </div>
-                <div className="mt-3 text-5xl font-bold tracking-tight text-slate-900">
-                  {userData.currentWeek}주차
-                </div>
-                <div className="mt-2 text-slate-700">{analysis.percentileText}</div>
-              </div>
+          <div className="text-5xl font-bold tracking-tight text-slate-900">
+            {userData.currentWeek}주차
+          </div>
 
-              <div className="text-right text-slate-700">
-                <div>{analysis.g}</div>
-                <div className="text-sm text-slate-500">{userData.budget}</div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="rounded-xl border bg-slate-50 p-4">
-                <div className="text-sm text-slate-500">G Drug</div>
-                <div className="mt-1 text-lg font-semibold text-slate-900">{analysis.g}</div>
-              </div>
-              <div className="rounded-xl border bg-slate-50 p-4">
-                <div className="text-sm text-slate-500">P Protein</div>
-                <div className="mt-1 text-lg font-semibold text-slate-900">{analysis.p}</div>
-              </div>
-              <div className="rounded-xl border bg-slate-50 p-4">
-                <div className="text-sm text-slate-500">S Strength</div>
-                <div className="mt-1 text-lg font-semibold text-slate-900">{analysis.s}</div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border bg-slate-50 p-4 text-slate-900">
-              “{analysis.headlineQuote}”
-            </div>
+          <div className="mt-4 rounded-2xl border bg-slate-50 p-5">
+            <div className="text-lg font-semibold text-slate-900">{analysis.percentileText}</div>
+            <div className="mt-2 text-slate-800">{analysis.headlineQuote}</div>
           </div>
         </section>
 
@@ -249,160 +281,102 @@ export default async function ResultsPage({
           <RoadmapChart analysis={analysis} />
         </section>
 
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="rounded-2xl bg-white shadow-sm border p-6 lg:col-span-1">
-            <div className="text-xl font-semibold text-slate-900 mb-4">내 정보</div>
-            <div className="space-y-2">
-              {userMeta.map((x) => (
-                <div key={x.k} className="flex items-center justify-between gap-3">
-                  <div className="text-sm text-slate-500">{x.k}</div>
-                  <div className="text-sm text-slate-900">{x.v}</div>
+        <section className="rounded-2xl bg-white shadow-sm border p-6">
+          <div className="text-xl font-semibold text-slate-900 mb-4">내 정보</div>
+          <div className="space-y-2">
+            {userMeta.map((x) => (
+              <div key={x.k} className="flex items-center justify-between gap-3">
+                <div className="text-sm text-slate-500">{x.k}</div>
+                <div className="text-sm text-slate-900">{x.v}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl bg-white shadow-sm border p-6">
+          <div className="text-xl font-semibold text-slate-900 mb-4">GPS 다이어트 전략 제안</div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {selectedBudget ? (
+              <div className="rounded-2xl border bg-slate-50 p-5">
+                <div className="text-sm text-slate-500">예산 등급별 핵심 전략</div>
+                <div className="mt-1 text-lg text-slate-900">{selectedBudget.tier}</div>
+                <div className="mt-3 text-sm text-slate-700">
+                  <div>대사 방어 핵심 기전: {selectedBudget.mech}</div>
+                  <div className="mt-1">핵심 인터벤션: {selectedBudget.action}</div>
+                  <div className="mt-1">가치(ROI): {selectedBudget.value}</div>
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            ) : null}
 
-          <div className="rounded-2xl bg-white shadow-sm border p-6 lg:col-span-2">
-            <div className="text-xl font-semibold text-slate-900 mb-4">핵심 컨셉</div>
-            <div className="space-y-3">
-              {coreConcept.map((x) => (
-                <div key={x.k} className="rounded-xl border bg-slate-50 p-4">
-                  <div className="text-sm text-slate-500">{x.k}</div>
-                  <div className="mt-1 text-slate-900">{x.v}</div>
-                  {x.sub ? <div className="mt-1 text-sm text-slate-600">{x.sub}</div> : null}
+            {selectedStageGuide ? (
+              <div className="rounded-2xl border bg-slate-50 p-5">
+                <div className="text-sm text-slate-500">투약 상태별 가이드</div>
+                <div className="mt-1 text-lg text-slate-900">{selectedStageGuide.status}</div>
+                <div className="mt-3 text-sm text-slate-700">
+                  <div>상황 정의: {selectedStageGuide.def}</div>
+                  <div className="mt-1">핵심 권고: {selectedStageGuide.rec}</div>
+                  {selectedStageGuide.note ? <div className="mt-1 text-slate-600">비고: {selectedStageGuide.note}</div> : null}
                 </div>
-              ))}
+              </div>
+            ) : null}
+
+            {selectedDoseGuide ? (
+              <div className="rounded-2xl border bg-slate-50 p-5">
+                <div className="text-sm text-slate-500">현재 용량 가이드</div>
+                <div className="mt-1 text-lg text-slate-900">{selectedDoseGuide.drug} {selectedDoseGuide.dose} mg</div>
+                <div className="mt-3 text-sm text-slate-700">
+                  <div>권장 유지 기간: {selectedDoseGuide.keep}</div>
+                  <div className="mt-1">Action Item: {selectedDoseGuide.action}</div>
+                </div>
+              </div>
+            ) : null}
+
+            {selectedWeekSegment ? (
+              <div className="rounded-2xl border bg-slate-50 p-5">
+                <div className="text-sm text-slate-500">현재 주차 구간의 기대 변화</div>
+                <div className="mt-1 text-lg text-slate-900">{selectedWeekSegment.w} · {selectedWeekSegment.name}</div>
+                <div className="mt-3 text-sm text-slate-700">
+                  <div>특징: {selectedWeekSegment.exp}</div>
+                  <div className="mt-1">Action: {selectedWeekSegment.action}</div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          {selectedTrigger ? (
+            <div className="mt-4 rounded-2xl border bg-white p-5">
+              <div className="text-sm text-slate-500">개인화 메시지</div>
+              <div className="mt-2 text-slate-900">{selectedTrigger.advice}</div>
             </div>
-          </div>
-        </section>
+          ) : null}
 
-        <section className="rounded-2xl bg-white shadow-sm border p-6">
-          <div className="text-xl font-semibold text-slate-900 mb-4">예산 등급별 전략</div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="text-slate-600">
-                <tr className="border-b">
-                  <th className="py-2 text-left">예산 등급</th>
-                  <th className="py-2 text-left">대사 방어 핵심 기전</th>
-                  <th className="py-2 text-left">핵심 인터벤션(Action)</th>
-                  <th className="py-2 text-left">ROI 및 경제적 논리(Value)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {budgetTable.map((r) => (
-                  <tr key={r.tier} className="border-b last:border-b-0">
-                    <td className="py-3 pr-4 whitespace-nowrap">{r.tier}</td>
-                    <td className="py-3 pr-4">{r.mech}</td>
-                    <td className="py-3 pr-4">{r.action}</td>
-                    <td className="py-3">{r.value}</td>
-                  </tr>
+          <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="rounded-2xl border bg-white p-5">
+              <div className="text-sm text-slate-500">핵심 수칙</div>
+              <div className="mt-3 space-y-2">
+                {rulesToShow.map((r) => (
+                  <div key={r.rule} className="rounded-xl border bg-slate-50 p-4">
+                    <div className="text-xs text-slate-500">{r.cat}</div>
+                    <div className="mt-1 text-slate-900">{r.rule}</div>
+                    <div className="mt-1 text-sm text-slate-600">{r.desc}</div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+              </div>
+            </div>
 
-        <section className="rounded-2xl bg-white shadow-sm border p-6">
-          <div className="text-xl font-semibold text-slate-900 mb-4">투약 상태별 가이드</div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="text-slate-600">
-                <tr className="border-b">
-                  <th className="py-2 text-left">투약 상태</th>
-                  <th className="py-2 text-left">상황 정의</th>
-                  <th className="py-2 text-left">예산별 핵심 권고 사항</th>
-                  <th className="py-2 text-left">비고</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stageTable.map((r) => (
-                  <tr key={r.status} className="border-b last:border-b-0">
-                    <td className="py-3 pr-4 whitespace-nowrap">{r.status}</td>
-                    <td className="py-3 pr-4">{r.def}</td>
-                    <td className="py-3 pr-4">{r.rec}</td>
-                    <td className="py-3">{r.note}</td>
-                  </tr>
+            <div className="rounded-2xl border bg-white p-5">
+              <div className="text-sm text-slate-500">자주 오는 고비</div>
+              <div className="mt-3 space-y-2">
+                {pitfallsToShow.map((p) => (
+                  <div key={p.name} className="rounded-xl border bg-slate-50 p-4">
+                    <div className="text-xs text-slate-500">{p.when}</div>
+                    <div className="mt-1 text-slate-900">{p.name}</div>
+                    <div className="mt-1 text-sm text-slate-600">{p.desc}</div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="rounded-2xl bg-white shadow-sm border p-6">
-          <div className="text-xl font-semibold text-slate-900 mb-4">약물 용량별 가이드</div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="text-slate-600">
-                <tr className="border-b">
-                  <th className="py-2 text-left">약물</th>
-                  <th className="py-2 text-left">용량(mg)</th>
-                  <th className="py-2 text-left">권장 유지 기간</th>
-                  <th className="py-2 text-left">단계별 대사 가이드(Action Item)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {doseTable.map((r, idx) => (
-                  <tr key={`${r.drug}-${r.dose}-${idx}`} className="border-b last:border-b-0">
-                    <td className="py-3 pr-4 whitespace-nowrap">{r.drug}</td>
-                    <td className="py-3 pr-4 whitespace-nowrap">{r.dose}</td>
-                    <td className="py-3 pr-4 whitespace-nowrap">{r.dur}</td>
-                    <td className="py-3">{r.action}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="rounded-2xl bg-white shadow-sm border p-6">
-          <div className="text-xl font-semibold text-slate-900 mb-4">주차 구간별 기대 변화</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {weekBands.map((x) => (
-              <div key={x.w} className="rounded-xl border bg-slate-50 p-4">
-                <div className="text-sm text-slate-500">{x.w} · {x.name}</div>
-                <div className="mt-1 text-slate-900">{x.exp}</div>
-                <div className="mt-2 text-sm text-slate-700">Action: {x.action}</div>
               </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-2xl bg-white shadow-sm border p-6">
-          <div className="text-xl font-semibold text-slate-900 mb-4">트리거 메시지 예시</div>
-          <div className="space-y-3">
-            {triggers.map((t) => (
-              <div key={t.when} className="rounded-xl border bg-slate-50 p-4">
-                <div className="text-sm text-slate-500">{t.when}</div>
-                <div className="mt-1 text-slate-900">{t.advice}</div>
-                <div className="mt-2 text-sm text-slate-600">의도: {t.intent}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-2xl bg-white shadow-sm border p-6">
-          <div className="text-xl font-semibold text-slate-900 mb-4">핵심 수칙</div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {rules.map((r) => (
-              <div key={r.rule} className="rounded-xl border bg-slate-50 p-4">
-                <div className="text-sm text-slate-500">{r.cat}</div>
-                <div className="mt-1 text-slate-900">{r.rule}</div>
-                <div className="mt-2 text-sm text-slate-700">{r.desc}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-2xl bg-white shadow-sm border p-6">
-          <div className="text-xl font-semibold text-slate-900 mb-4">자주 오는 고비</div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {pitfalls.map((p) => (
-              <div key={p.name} className="rounded-xl border bg-slate-50 p-4">
-                <div className="text-sm text-slate-500">{p.when}</div>
-                <div className="mt-1 text-slate-900">{p.name}</div>
-                <div className="mt-2 text-sm text-slate-700">{p.desc}</div>
-              </div>
-            ))}
+            </div>
           </div>
         </section>
 

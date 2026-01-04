@@ -258,14 +258,6 @@ export default React.memo(function RoadmapChart({ analysis }: { analysis: Analys
           ) : null}
         </LineChart>
       </ResponsiveContainer>
-
-      {stage && (stage.name || stage.msg) && (
-        <div className="mt-3 text-sm text-center text-slate-700">
-          {stage.name ? `${stage.name}` : ""}
-          {stage.name && stage.msg ? " · " : ""}
-          {stage.msg ? stage.msg : ""}
-        </div>
-      )}
     </div>
   );
 });
