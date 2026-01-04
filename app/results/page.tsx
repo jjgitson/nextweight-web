@@ -216,6 +216,32 @@ export default async function ResultsPage({
     doseMg != null
       ? doseTable.find((x) => x.drug === drugLabel && Math.abs(Number(x.dose) - doseMg) < 0.001) || null
       : null;
+const weekSegments = [
+  {
+    when: "1~2주",
+    name: "초기 적응",
+    desc: "체중 변화가 크지 않고 가벼운 오심이 있을 수 있습니다.",
+    action: "낮은 용량 적응, 수분 섭취 집중",
+  },
+  {
+    when: "3~6주",
+    name: "식욕 변화",
+    desc: "야식 갈망이 감소하고 1~2kg 감량이 시작될 수 있습니다.",
+    action: "식사 패턴 개선, 단백질 섭취 의식",
+  },
+  {
+    when: "6~12주",
+    name: "의미 있는 변화",
+    desc: "주당 0.5~1kg 감량이 나타나고 치료 용량에 도달합니다.",
+    action: "GPS 전략 본격화, 근력 운동 시작",
+  },
+  {
+    when: "3~6개월",
+    name: "정체기 & 조정",
+    desc: "초기 체중의 약 10% 감량 후 정체가 올 수 있습니다.",
+    action: "HMB 고려, 운동 강도 재조정",
+  },
+];
 
   const selectedWeekSegment = (() => {
     const w = userData.currentWeek;
