@@ -361,11 +361,12 @@ const weekSegments = [
             {selectedWeekSegment ? (
               <div className="rounded-2xl border bg-slate-50 p-5">
                 <div className="text-sm text-slate-500">현재 주차 구간의 기대 변화</div>
-                <div className="mt-1 text-lg text-slate-900">{selectedWeekSegment.w} · {selectedWeekSegment.name}</div>
-                <div className="mt-3 text-sm text-slate-700">
-                  <div>특징: {selectedWeekSegment.exp}</div>
-                  <div className="mt-1">Action: {selectedWeekSegment.action}</div>
-                </div>
+               <div className="mt-1 text-lg text-slate-900">{selectedWeekSegment.when} · {selectedWeekSegment.name}</div>
+<div className="mt-3 text-sm text-slate-700">
+  <div>특징: {selectedWeekSegment.desc}</div>
+  <div className="mt-1">Action: {selectedWeekSegment.action}</div>
+</div>
+
               </div>
             ) : null}
           </div>
