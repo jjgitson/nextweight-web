@@ -247,7 +247,7 @@ export default async function ResultsPage({
     if (w <= 12) return [pitfalls[1]].filter(Boolean);
     return [pitfalls[2]].filter(Boolean);
   })();
-];
+
 
   const userMeta = [
     { k: "이름", v: userData.userName || "미입력" },
