@@ -1,508 +1,137 @@
-'use client';
+"use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-type DrugTypeKey = 'MOUNJARO' | 'WEGOVY';
-type BudgetTier = '실속형' | '표준형' | '집중형';
-type MuscleMassTier = '모름' | '이하' | '표준' | '이상';
-type ExerciseTier = '안 함' | '1-2회' | '3-4회' | '5회+';
-type MainConcern = '요요' | '근감소' | '비용' | '부작용';
-
-type UserData = {
-  userName: string;
-  userAge: number;
-  userGender: '남성' | '여성';
-
-  currentWeight: number;
-  targetWeight: number;
-
-  drugStatus: '사용 전' | '사용 중';
-  drugType: DrugTypeKey;
-
-  startWeightBeforeDrug: number;
-
-  currentDose: number;
-  currentWeek: number;
-
-  startDate?: string;
-
-  muscleMass: MuscleMassTier;
-  exercise: ExerciseTier;
-  budget: BudgetTier;
-  mainConcern: MainConcern;
-  resolution: string;
-};
-
-const DOSE_OPTIONS: Record<DrugTypeKey, number[]> = {
-  MOUNJARO: [0, 2.5, 5, 7.5, 10, 12.5, 15],
-  WEGOVY: [0, 0.25, 0.5, 1.0, 1.7, 2.4],
-};
-
-function formatDoseLabel(dose: number) {
-  if (dose === 0) return '0 (시작 전)';
-  const str = Number.isInteger(dose) ? String(dose) : String(dose);
-  return `${str} mg`;
-}
-
-function todayISO() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-// 시작일 기준 주차 계산: 시작일 주 = 1주차
-function calcWeekFromStartDate(startDateISO: string) {
-  const start = new Date(startDateISO + 'T00:00:00');
-  const now = new Date();
-  const diffMs = now.getTime() - start.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const week = Math.floor(diffDays / 7) + 1;
-  return Math.max(1, week);
-}
-
-export default function HomePage() {
+export default function Home() {
   const router = useRouter();
 
-  const [userName, setUserName] = useState('');
-  const [userAge, setUserAge] = useState<number>(35);
-  const [userGender, setUserGender] = useState<'남성' | '여성'>('여성');
+  const [form, setForm] = useState({
+    userName: "",
+    userAge: "",
+    userGender: "여성",
+    exercise: "안 함",
+    muscleMass: "모름",
+    budget: "표준형",
 
-  const [exercise, setExercise] = useState<ExerciseTier>('안 함');
-  const [muscleMass, setMuscleMass] = useState<MuscleMassTier>('표준');
-  const [budget, setBudget] = useState<BudgetTier>('표준형');
+    currentWeight: "",
+    targetWeight: "",
 
-  const [currentWeight, setCurrentWeight] = useState<number>(80);
-  const [targetWeight, setTargetWeight] = useState<number>(65);
+    drugStatus: "사용 전",
+    drugType: "MOUNJARO",
+    currentDose: "",
+    startWeightBeforeDrug: "",
+    startDate: "",
+    currentWeek: "",
 
-  const [drugStatus, setDrugStatus] = useState<'사용 전' | '사용 중'>('사용 중');
-  const [drugType, setDrugType] = useState<DrugTypeKey>('MOUNJARO');
+    mainConcern: "요요",
+    resolution: "",
+  });
 
-  const [startWeightBeforeDrug, setStartWeightBeforeDrug] = useState<number>(80);
+  const update = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
-  const doseOptions = useMemo(() => DOSE_OPTIONS[drugType], [drugType]);
-  const [currentDose, setCurrentDose] = useState<number>(0);
-
-  // 주차 입력 방식: 자동(시작일 기반) + 수동 보정
-  const [startDate, setStartDate] = useState<string>(todayISO());
-  const [weekMode, setWeekMode] = useState<'auto' | 'manual'>('auto');
-  const computedWeek = useMemo(() => calcWeekFromStartDate(startDate), [startDate]);
-  const [currentWeek, setCurrentWeek] = useState<number>(1);
-
-  const [mainConcern, setMainConcern] = useState<MainConcern>('요요');
-  const [resolution, setResolution] = useState<string>('');
-
-  useEffect(() => {
-    if (weekMode === 'auto') setCurrentWeek(computedWeek);
-  }, [computedWeek, weekMode]);
-
-  useEffect(() => {
-    if (!doseOptions.includes(currentDose)) setCurrentDose(0);
-  }, [drugType, doseOptions, currentDose]);
-
-  useEffect(() => {
-    if (drugStatus === '사용 전') {
-      setCurrentDose(0);
-      setWeekMode('manual');
-      setCurrentWeek(1);
-    } else {
-      setWeekMode('auto');
-    }
-  }, [drugStatus]);
-
-  function handleSubmit() {
-    const payload: UserData = {
-      userName: userName.trim(),
-      userAge: Number(userAge),
-      userGender,
-
-      currentWeight: Number(currentWeight),
-      targetWeight: Number(targetWeight),
-
-      drugStatus,
-      drugType,
-
-      startWeightBeforeDrug: Number(startWeightBeforeDrug),
-
-      currentDose: Number(currentDose),
-      currentWeek: Number(currentWeek),
-
-      startDate,
-
-      muscleMass,
-      exercise,
-      budget,
-
-      mainConcern,
-      resolution: resolution.trim(),
-    };
-
-    localStorage.setItem('userData', JSON.stringify(payload));
-    router.push('/results');
-  }
-
-  const ui = styles;
+  const submit = () => {
+    const q = new URLSearchParams(form as any).toString();
+    router.push(`/results?${q}`);
+  };
 
   return (
-    <div style={ui.page}>
-      <div style={ui.container}>
-        <div style={ui.header}>
-          <div style={ui.h1}>Next Weight Lab</div>
-          <div style={ui.lead}>
-            비싼 다이어트가 요요로 끝나지 않도록.
-            <br />
-            GPS(Drug, Protein, Strength) 전략으로 대사 가교를 설계하세요.
+    <div className="min-h-screen bg-slate-50 py-10 px-4">
+      <div className="max-w-xl mx-auto space-y-6">
+        <h1 className="text-3xl font-black text-slate-900">Next Weight Lab</h1>
+
+        {/* 기본 정보 */}
+        <section className="bg-white p-6 rounded-3xl shadow border">
+          <h2 className="font-black mb-4">기본 정보</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <input placeholder="성함" className="input" onChange={(e) => update("userName", e.target.value)} />
+            <input placeholder="나이" className="input" onChange={(e) => update("userAge", e.target.value)} />
+            <select className="input" onChange={(e) => update("userGender", e.target.value)}>
+              <option>여성</option>
+              <option>남성</option>
+            </select>
+            <select className="input" onChange={(e) => update("exercise", e.target.value)}>
+              <option>안 함</option>
+              <option>주 1~2회</option>
+              <option>주 3회 이상</option>
+            </select>
           </div>
-        </div>
+        </section>
 
-        <div style={ui.card}>
-          <Section title="기본 정보">
-            <div style={ui.grid}>
-              <Field label="성함">
-                <input style={ui.input} value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="예: 홍길동" />
-              </Field>
-
-              <Field label="나이">
-                <input style={ui.input} type="number" value={userAge} onChange={(e) => setUserAge(Number(e.target.value))} min={19} max={99} />
-              </Field>
-
-              <Field label="성별">
-                <select style={ui.select} value={userGender} onChange={(e) => setUserGender(e.target.value as any)}>
-                  <option value="남성">남성</option>
-                  <option value="여성">여성</option>
-                </select>
-              </Field>
-
-              <Field label="주간 운동 빈도">
-                <select style={ui.select} value={exercise} onChange={(e) => setExercise(e.target.value as any)}>
-                  <option value="안 함">안 함</option>
-                  <option value="1-2회">1-2회</option>
-                  <option value="3-4회">3-4회</option>
-                  <option value="5회+">5회+</option>
-                </select>
-              </Field>
-
-              <Field label="골격근량">
-                <select style={ui.select} value={muscleMass} onChange={(e) => setMuscleMass(e.target.value as any)}>
-                  <option value="모름">모름</option>
-                  <option value="이하">이하</option>
-                  <option value="표준">표준</option>
-                  <option value="이상">이상</option>
-                </select>
-              </Field>
-
-              <Field label="다이어트 관리 예산">
-                <select style={ui.select} value={budget} onChange={(e) => setBudget(e.target.value as any)}>
-                  <option value="실속형">실속형</option>
-                  <option value="표준형">표준형</option>
-                  <option value="집중형">집중형</option>
-                </select>
-              </Field>
-            </div>
-          </Section>
-
-          <Section title="체중 목표">
-            <div style={ui.grid}>
-              <Field label="현재 체중 (kg)">
-                <input style={ui.input} type="number" value={currentWeight} onChange={(e) => setCurrentWeight(Number(e.target.value))} min={1} step="0.1" />
-              </Field>
-
-              <Field label="목표 체중 (kg)">
-                <input style={ui.input} type="number" value={targetWeight} onChange={(e) => setTargetWeight(Number(e.target.value))} min={1} step="0.1" />
-              </Field>
-            </div>
-          </Section>
-
-          <Section title="투약 정보">
-            <div style={ui.grid}>
-              <Field label="투약 상태">
-                <div style={ui.segment}>
-                  <button
-                    type="button"
-                    style={{ ...ui.segmentBtn, ...(drugStatus === '사용 전' ? ui.segmentActive : {}) }}
-                    onClick={() => setDrugStatus('사용 전')}
-                  >
-                    사용 전
-                  </button>
-                  <button
-                    type="button"
-                    style={{ ...ui.segmentBtn, ...(drugStatus === '사용 중' ? ui.segmentActive : {}) }}
-                    onClick={() => setDrugStatus('사용 중')}
-                  >
-                    사용 중
-                  </button>
-                </div>
-              </Field>
-
-              <Field label="약물 선택">
-                <select style={ui.select} value={drugType} onChange={(e) => setDrugType(e.target.value as any)}>
-                  <option value="MOUNJARO">마운자로</option>
-                  <option value="WEGOVY">위고비</option>
-                </select>
-              </Field>
-
-              <Field label="투약 전 시작 체중 (kg)">
-                <input
-                  style={ui.input}
-                  type="number"
-                  value={startWeightBeforeDrug}
-                  onChange={(e) => setStartWeightBeforeDrug(Number(e.target.value))}
-                  min={1}
-                  step="0.1"
-                />
-              </Field>
-
-              <Field label="현재 투약 용량">
-                <select style={ui.select} value={currentDose} onChange={(e) => setCurrentDose(Number(e.target.value))}>
-                  {doseOptions.map((d) => (
-                    <option key={String(d)} value={d}>
-                      {formatDoseLabel(d)}
-                    </option>
-                  ))}
-                </select>
-                <div style={ui.help}>약물 기준으로 용량 단계를 선택하세요.</div>
-              </Field>
-
-              <Field label="투약 시작일">
-                <input
-                  style={ui.input}
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  disabled={drugStatus === '사용 전'}
-                />
-                <div style={ui.help}>시작일 기준으로 현재 주차를 자동 계산합니다.</div>
-              </Field>
-
-              <Field label="현재 투약 주차">
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <input
-                    style={{ ...ui.input, width: 140 }}
-                    type="number"
-                    value={currentWeek}
-                    onChange={(e) => setCurrentWeek(Number(e.target.value))}
-                    min={1}
-                    disabled={weekMode === 'auto' && drugStatus === '사용 중'}
-                  />
-                  {drugStatus === '사용 중' && (
-                    <div style={ui.segmentSmall}>
-                      <button
-                        type="button"
-                        style={{ ...ui.segmentBtnSmall, ...(weekMode === 'auto' ? ui.segmentActiveSmall : {}) }}
-                        onClick={() => {
-                          setWeekMode('auto');
-                          setCurrentWeek(computedWeek);
-                        }}
-                      >
-                        자동
-                      </button>
-                      <button
-                        type="button"
-                        style={{ ...ui.segmentBtnSmall, ...(weekMode === 'manual' ? ui.segmentActiveSmall : {}) }}
-                        onClick={() => setWeekMode('manual')}
-                      >
-                        수동
-                      </button>
-                    </div>
-                  )}
-                </div>
-                {drugStatus === '사용 중' && <div style={ui.help}>자동 계산값: {computedWeek}주차 (필요하면 수동으로 보정하세요)</div>}
-              </Field>
-            </div>
-          </Section>
-
-          <Section title="고민">
-            <div style={ui.grid}>
-              <Field label="다이어트에서 가장 큰 고민">
-                <select style={ui.select} value={mainConcern} onChange={(e) => setMainConcern(e.target.value as any)}>
-                  <option value="요요">요요</option>
-                  <option value="근감소">근감소</option>
-                  <option value="비용">비용</option>
-                  <option value="부작용">부작용</option>
-                </select>
-              </Field>
-
-              <Field label="다이어트 각오">
-                <textarea
-                  style={ui.textarea}
-                  value={resolution}
-                  onChange={(e) => setResolution(e.target.value)}
-                  placeholder="예: 이번에는 기필코..."
-                />
-              </Field>
-            </div>
-          </Section>
-
-          <div style={ui.actions}>
-            <button type="button" style={ui.primaryBtn} onClick={handleSubmit}>
-              무료 로드맵 생성
-            </button>
+        {/* 체중 정보 */}
+        <section className="bg-emerald-50 p-6 rounded-3xl shadow border">
+          <h2 className="font-black mb-4">체중 정보</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <input placeholder="현재 체중 (kg)" className="input" onChange={(e) => update("currentWeight", e.target.value)} />
+            <input placeholder="목표 체중 (kg)" className="input" onChange={(e) => update("targetWeight", e.target.value)} />
           </div>
+        </section>
 
-          <div style={ui.disclaimer}>본 서비스는 의료 진단이 아닌 자기관리 가이드 도구입니다.</div>
-        </div>
+        {/* 투약 정보 */}
+        <section className="bg-sky-50 p-6 rounded-3xl shadow border">
+          <h2 className="font-black mb-4">투약 정보</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <select className="input" onChange={(e) => update("drugStatus", e.target.value)}>
+              <option>사용 전</option>
+              <option>증량/유지기</option>
+              <option>테이퍼링기</option>
+              <option>중단 후</option>
+            </select>
+            <select className="input" onChange={(e) => update("drugType", e.target.value)}>
+              <option value="MOUNJARO">마운자로</option>
+              <option value="WEGOVY">위고비</option>
+            </select>
+            <input placeholder="현재 용량 (mg)" className="input" onChange={(e) => update("currentDose", e.target.value)} />
+            <input placeholder="투약 시작 전 체중" className="input" onChange={(e) => update("startWeightBeforeDrug", e.target.value)} />
+            <input type="date" className="input col-span-2" onChange={(e) => update("startDate", e.target.value)} />
+            <input placeholder="현재 몇 주차인지" className="input col-span-2" onChange={(e) => update("currentWeek", e.target.value)} />
+          </div>
+        </section>
+
+        {/* 예산 & 우선순위 */}
+        <section className="bg-amber-50 p-6 rounded-3xl shadow border">
+          <h2 className="font-black mb-2">관리 예산</h2>
+          <p className="text-sm text-slate-600 mb-3">
+            GLP-1은 비용이 큰 다이어트입니다. 예산에 맞게 효율적인 전략이 필요하며,
+            사용자마다 관리 범위가 달라 3가지 예산 범주로 표현했습니다.
+          </p>
+          <select className="input mb-4" onChange={(e) => update("budget", e.target.value)}>
+            <option>실속형</option>
+            <option selected>표준형</option>
+            <option>집중형</option>
+          </select>
+
+          <h2 className="font-black mb-2">다이어트 고민</h2>
+          <select className="input mb-3" onChange={(e) => update("mainConcern", e.target.value)}>
+            <option>요요</option>
+            <option>근손실</option>
+            <option>체중 정체</option>
+          </select>
+
+          <textarea
+            placeholder="이번 다이어트에 대한 각오를 적어주세요"
+            className="input h-20"
+            onChange={(e) => update("resolution", e.target.value)}
+          />
+        </section>
+
+        <button
+          onClick={submit}
+          className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-lg"
+        >
+          무료 GPS 로드맵 생성
+        </button>
       </div>
+
+      <style jsx global>{`
+        .input {
+          border: 1px solid #e5e7eb;
+          border-radius: 0.75rem;
+          padding: 0.75rem;
+          font-size: 0.875rem;
+          outline: none;
+        }
+      `}</style>
     </div>
   );
 }
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: 18 }}>
-      <div style={styles.sectionTitle}>{title}</div>
-      <div style={styles.sectionBody}>{children}</div>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 14, color: '#0f172a' }}>{label}</div>
-      {children}
-    </div>
-  );
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: '100vh',
-    background: '#ffffff',
-    color: '#0f172a',
-  },
-  container: {
-    maxWidth: 860,
-    margin: '0 auto',
-    padding: '28px 18px 60px',
-  },
-  header: {
-    marginBottom: 18,
-  },
-  h1: {
-    fontSize: 56,
-    lineHeight: 1.05,
-    letterSpacing: '-0.03em',
-    marginBottom: 12,
-    fontWeight: 700,
-  },
-  lead: {
-    fontSize: 20,
-    lineHeight: 1.6,
-    color: '#0f172a',
-  },
-  card: {
-    border: '1px solid rgba(15,23,42,0.10)',
-    borderRadius: 18,
-    padding: 18,
-    background: '#ffffff',
-    boxShadow: '0 8px 24px rgba(15,23,42,0.06)',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 700,
-    marginBottom: 10,
-    color: '#0f172a',
-  },
-  sectionBody: {
-    padding: 14,
-    border: '1px solid rgba(15,23,42,0.08)',
-    borderRadius: 14,
-    background: 'rgba(15,23,42,0.02)',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-    gap: 16,
-  },
-  input: {
-    height: 40,
-    borderRadius: 10,
-    border: '1px solid rgba(15,23,42,0.18)',
-    padding: '0 12px',
-    fontSize: 14,
-    outline: 'none',
-    background: '#fff',
-  },
-  select: {
-    height: 40,
-    borderRadius: 10,
-    border: '1px solid rgba(15,23,42,0.18)',
-    padding: '0 12px',
-    fontSize: 14,
-    outline: 'none',
-    background: '#fff',
-  },
-  textarea: {
-    minHeight: 90,
-    borderRadius: 10,
-    border: '1px solid rgba(15,23,42,0.18)',
-    padding: '10px 12px',
-    fontSize: 14,
-    outline: 'none',
-    resize: 'vertical',
-    background: '#fff',
-  },
-  segment: {
-    display: 'flex',
-    gap: 10,
-  },
-  segmentBtn: {
-    height: 40,
-    padding: '0 14px',
-    borderRadius: 10,
-    border: '1px solid rgba(15,23,42,0.18)',
-    background: '#fff',
-    cursor: 'pointer',
-    fontSize: 14,
-  },
-  segmentActive: {
-    background: '#0f172a',
-    color: '#fff',
-    border: '1px solid #0f172a',
-  },
-  segmentSmall: {
-    display: 'flex',
-    gap: 8,
-  },
-  segmentBtnSmall: {
-    height: 34,
-    padding: '0 12px',
-    borderRadius: 10,
-    border: '1px solid rgba(15,23,42,0.18)',
-    background: '#fff',
-    cursor: 'pointer',
-    fontSize: 13,
-  },
-  segmentActiveSmall: {
-    background: '#0f172a',
-    color: '#fff',
-    border: '1px solid #0f172a',
-  },
-  help: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 6,
-  },
-  actions: {
-    marginTop: 6,
-    display: 'flex',
-    justifyContent: 'flex-start',
-  },
-  primaryBtn: {
-    height: 44,
-    padding: '0 16px',
-    borderRadius: 12,
-    border: '1px solid #0f172a',
-    background: '#0f172a',
-    color: '#fff',
-    cursor: 'pointer',
-    fontSize: 14,
-  },
-  disclaimer: {
-    marginTop: 14,
-    fontSize: 12,
-    color: '#64748b',
-  },
-};
